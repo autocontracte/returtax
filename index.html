@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>ReturTax — Recuperarea taxelor din Norvegia</title>
+  <meta name="description" content="Ați lucrat în Norvegia? Vă ajutăm să recuperați banii plătiți în plus pe taxe. Simplu, în limba română, pas cu pas.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Ecranul 1: conversația (cât tot ecranul) -->
+  <div class="screen">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="ReturTax — conversație nouă">
+        <img src="assets/logo.png" alt="ReturTax" width="740" height="380">
+      </a>
+      <a class="call" href="tel:+40700000000" aria-label="Sunați-ne: +40 700 000 000">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg>
+        <span>Sunați-ne</span>
+      </a>
+    </header>
+
+    <main class="app" id="chat">
+      <section class="intro" aria-labelledby="title">
+        <div id="hero-bot" class="hero-bot"></div>
+        <h1 id="title">Ați lucrat în Norvegia?</h1>
+        <p>Sunt <strong>Dexter</strong>. Spuneți-mi povestea dumneavoastră și vă ajut să recuperați banii plătiți în plus pe taxe.</p>
+      </section>
+
+      <ol id="chat-log" class="chat-log" aria-live="polite" aria-relevant="additions"></ol>
+
+      <div id="quick-replies" class="quick-replies" role="group" aria-label="Sugestii"></div>
+
+      <form id="chat-form" class="composer" autocomplete="off">
+        <label for="chat-input" class="visually-hidden">Mesajul dumneavoastră</label>
+        <textarea id="chat-input" rows="1" placeholder="Scrieți aici ce s-a întâmplat, ca pe WhatsApp…"></textarea>
+        <button type="button" id="mic-btn" class="icon-btn mic" hidden aria-pressed="false" aria-label="Dictați mesajul">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v7a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V22h2v-3.1A7 7 0 0 0 19 12h-2z"/></svg>
+        </button>
+        <button type="submit" class="icon-btn send" aria-label="Trimite">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M11 20V7.8l-5.6 5.6L4 12l8-8 8 8-1.4 1.4L13 7.8V20z"/></svg>
+        </button>
+      </form>
+
+      <p class="note">Verificare gratuită · Nu plătiți nimic dacă nu recuperăm</p>
+    </main>
+
+    <a href="#cum-functioneaza" class="scroll-hint">
+      Cum funcționează
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 16.6 5.4 10l1.4-1.4 5.2 5.2 5.2-5.2 1.4 1.4z"/></svg>
+    </a>
+  </div>
+
+  <!-- Ecranul 2+: explicații (sub conversație, la scroll) -->
+  <div class="info">
+    <section id="cum-functioneaza" class="section" aria-labelledby="steps-title">
+      <p class="kicker">Simplu, în 3 pași</p>
+      <h2 id="steps-title">Cum funcționează</h2>
+      <ol class="steps">
+        <li>
+          <span class="step-num" aria-hidden="true">01</span>
+          <h3>Ne povestiți</h3>
+          <p>Îi spuneți lui Dexter, aici în chat, în ce ani ați lucrat în Norvegia. Sau ne sunați. Durează câteva minute.</p>
+        </li>
+        <li>
+          <span class="step-num" aria-hidden="true">02</span>
+          <h3>Verificăm noi</h3>
+          <p>Analizăm actele și vă spunem cât puteți primi înapoi. Verificarea este gratuită.</p>
+        </li>
+        <li>
+          <span class="step-num" aria-hidden="true">03</span>
+          <h3>Primiți banii</h3>
+          <p>Ne ocupăm de toată corespondența cu Skatteetaten. Banii ajung direct în contul dumneavoastră.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section section-soft" aria-labelledby="why-title">
+      <p class="kicker">De ce ReturTax</p>
+      <h2 id="why-title">Fără bătăi de cap</h2>
+      <ul class="perks">
+        <li>
+          <span class="perk-icon" aria-hidden="true">🇷🇴</span>
+          <div><h3>Totul în română</h3><p>Vorbiți cu oameni care vă înțeleg. Nu trebuie să știți norvegiană sau engleză.</p></div>
+        </li>
+        <li>
+          <span class="perk-icon" aria-hidden="true">✓</span>
+          <div><h3>Plătiți doar dacă primiți</h3><p>Dacă nu recuperăm nimic, nu plătiți nimic. Comisionul îl aflați de la început.</p></div>
+        </li>
+        <li>
+          <span class="perk-icon" aria-hidden="true">📄</span>
+          <div><h3>Ne ocupăm de hârtii</h3><p>Completăm formularele și le trimitem noi. Dacă vă lipsesc acte, le cerem noi.</p></div>
+        </li>
+        <li>
+          <span class="perk-icon" aria-hidden="true">📞</span>
+          <div><h3>Vă ținem la curent</h3><p>Vă sunăm la fiecare pas important, ca să știți mereu unde e dosarul.</p></div>
+        </li>
+      </ul>
+    </section>
+
+    <section id="intrebari" class="section" aria-labelledby="faq-title">
+      <p class="kicker">Întrebări frecvente</p>
+      <h2 id="faq-title">Ce vă întreabă lumea</h2>
+      <div class="faq">
+        <details>
+          <summary>Cine poate cere banii înapoi?</summary>
+          <p>Oricine a lucrat în Norvegia și a plătit impozit acolo. Mulți au plătit mai mult decât trebuia — mai ales cei care și-au plătit singuri drumul sau cazarea, sau au avut familia în România.</p>
+        </details>
+        <details>
+          <summary>Ce acte îmi trebuie?</summary>
+          <p>Actul de identitate, numărul norvegian (D-nummer), fluturașii de salariu sau contractul și un cont bancar. Dacă vă lipsesc, multe le putem cere noi.</p>
+        </details>
+        <details>
+          <summary>Cât costă?</summary>
+          <p>Verificarea este gratuită. Dacă nu recuperăm nimic, nu plătiți nimic. Comisionul vi-l spunem clar, înainte să semnați ceva.</p>
+        </details>
+        <details>
+          <summary>Cât durează?</summary>
+          <p>De obicei câteva luni, în funcție de răspunsul fiscului norvegian. Vă ținem la curent pe tot parcursul.</p>
+        </details>
+        <details>
+          <summary>Pentru ce ani pot cere?</summary>
+          <p>De regulă se pot verifica și anii trecuți, nu doar ultimul. Spuneți-ne toți anii în care ați lucrat și vă spunem ce se mai poate recupera.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="section cta" aria-labelledby="cta-title">
+      <h2 id="cta-title">Hai să vedem cât puteți primi</h2>
+      <p>Durează câteva minute. Verificarea este gratuită.</p>
+      <div class="cta-buttons">
+        <a href="#chat" class="btn btn-primary" data-start-chat>Vorbiți cu Dexter</a>
+        <a href="tel:+40700000000" class="btn btn-ghost">Sunați: +40 700 000 000</a>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <img src="assets/logo.png" alt="ReturTax" width="740" height="380" class="footer-logo">
+      <p>Recuperarea taxelor din Norvegia pentru românii care au muncit acolo.</p>
+      <p><a href="tel:+40700000000">+40 700 000 000</a> · <a href="mailto:contact@returtax.ro">contact@returtax.ro</a></p>
+      <p class="copy">© <span id="year">2026</span> ReturTax.ro</p>
+    </footer>
+  </div>
+
+  <!-- Dexter, asistentul ReturTax: o cască de protecție cu față animată -->
+  <template id="bot-tpl">
+    <svg class="bot" viewBox="0 0 458 327" aria-hidden="true" focusable="false">
+      <g class="waves" fill="none" stroke="#00a8ff" stroke-width="9" stroke-linecap="round">
+        <path class="wave w1" d="M-8 130q-12 25 0 50"/>
+        <path class="wave w2" d="M-28 116q-19 39 0 78"/>
+        <path class="wave w1" d="M466 150q12 25 0 50"/>
+        <path class="wave w2" d="M486 136q19 39 0 78"/>
+      </g>
+      <image href="assets/dexter-casca.webp" x="0" y="0" width="458" height="327"/>
+      <g class="face">
+        <g class="eye">
+          <circle cx="143" cy="118" r="50" fill="#fff" stroke="#1f2937" stroke-width="7"/>
+          <g class="pupil"><circle cx="148" cy="126" r="22" fill="#1f2937"/><circle cx="156" cy="117" r="7.5" fill="#fff"/></g>
+        </g>
+        <g class="eye">
+          <circle cx="242" cy="118" r="50" fill="#fff" stroke="#1f2937" stroke-width="7"/>
+          <g class="pupil"><circle cx="247" cy="126" r="22" fill="#1f2937"/><circle cx="255" cy="117" r="7.5" fill="#fff"/></g>
+        </g>
+        <path class="smile" d="M163 206q29 30 58 0" stroke="#1f2937" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <ellipse class="mouth" cx="192" cy="214" rx="17" ry="15" fill="#1f2937"/>
+      </g>
+    </svg>
+  </template>
+
+  <script src="js/chat.js"></script>
+</body>
+</html>
