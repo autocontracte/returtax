@@ -372,8 +372,9 @@ elseif ($view === 'costuri'):
         FROM messages GROUP BY luna ORDER BY luna DESC LIMIT 12")->fetchAll();
 ?>
     <h1>Costuri AI</h1>
-    <p class="muted">Model: Claude Haiku 5.5. Prețuri: $0,10 / milion tokeni intrare, $0,50 / milion ieșire, $0,01 / milion din cache.
-       Lei calculați la un curs aproximativ de <?= USD_TO_RON ?> lei/$. Factura oficială: console.anthropic.com.</p>
+    <p class="muted">Prețuri pe milion de tokeni (intrare / ieșire / din cache):
+       <?php foreach (PRICES as $model => [$in, $out, $read]): ?><br><?= e($model) ?>: $<?= $in ?> / $<?= $out ?> / $<?= $read ?><?php endforeach; ?>
+       <br>Lei calculați la un curs aproximativ de <?= USD_TO_RON ?> lei/$. Factura oficială: console.anthropic.com.</p>
     <h2>Pe luni</h2>
     <div class="table"><table>
       <tr><th>Luna</th><th>Răspunsuri AI</th><th>Cost</th><th>În lei</th></tr>

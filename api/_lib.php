@@ -12,12 +12,12 @@ const RT_HOME = __DIR__ . '/../..';               // /home/returtax
 const RT_DATA = RT_HOME . '/data';
 const RT_SECRETS = RT_HOME . '/secrets';
 
-// Prețuri Claude Haiku 5.5 (prompturi sub 100K tokeni), în USD per token
-const PRICE_IN          = 0.10 / 1e6;
-const PRICE_OUT         = 0.50 / 1e6;
-const PRICE_CACHE_READ  = 0.01 / 1e6;
-const PRICE_CACHE_WRITE = 0.125 / 1e6;
-const USD_TO_RON        = 4.6;                     // curs aproximativ, doar pentru afișare
+// Prețuri în USD per milion de tokeni: intrare, ieșire, citire din cache, scriere în cache (5 min)
+const PRICES = [
+    'claude-haiku-5-5'  => [0.10, 0.50, 0.01, 0.125],   // prompturi sub 100K tokeni
+    'claude-sonnet-5-5' => [2.00, 10.00, 0.20, 2.50],
+];
+const USD_TO_RON = 4.6;                                  // curs aproximativ, doar pentru afișare
 
 function rt_json(int $code, array $body): void {
     http_response_code($code);
@@ -60,7 +60,8 @@ function rt_db(): PDO {
             content         TEXT NOT NULL,
             input_tokens    INTEGER, output_tokens INTEGER, cache_read INTEGER, cache_write INTEGER,
             cost_usd        REAL,
-            meta            TEXT                     -- ex. estimarea calculată
+            meta            TEXT,                    -- ex. estimarea calculată
+            model           TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, id);
         CREATE TABLE IF NOT EXISTS leads (
@@ -75,6 +76,12 @@ function rt_db(): PDO {
         );
         CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at);
     ");
+    // Bazele create înainte de coloana „model”
+    try {
+        $db->exec('ALTER TABLE messages ADD COLUMN model TEXT');
+    } catch (PDOException $e) {
+        // coloana există deja
+    }
     return $db;
 }
 
@@ -108,25 +115,26 @@ function rt_touch_conversation(string $id): void {
        ->execute([$id, $now, $now, rt_ip_hash(), mb_substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200)]);
 }
 
-function rt_log_message(string $conv, string $role, string $source, string $content, array $usage = [], ?string $meta = null): void {
-    $cost = rt_cost($usage);
+function rt_log_message(string $conv, string $role, string $source, string $content, array $usage = [], ?string $meta = null, ?string $model = null): void {
+    $cost = $usage ? rt_cost($usage, (string)$model) : 0.0;
     $db = rt_db();
     rt_touch_conversation($conv);
-    $db->prepare('INSERT INTO messages (conversation_id, created_at, role, source, content, input_tokens, output_tokens, cache_read, cache_write, cost_usd, meta)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    $db->prepare('INSERT INTO messages (conversation_id, created_at, role, source, content, input_tokens, output_tokens, cache_read, cache_write, cost_usd, meta, model)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
        ->execute([$conv, rt_now(), $role, $source, mb_substr($content, 0, 4000),
                   $usage['input_tokens'] ?? null, $usage['output_tokens'] ?? null,
                   $usage['cache_read_input_tokens'] ?? null, $usage['cache_creation_input_tokens'] ?? null,
-                  $usage ? $cost : null, $meta]);
+                  $usage ? $cost : null, $meta, $model]);
     $db->prepare('UPDATE conversations SET messages = messages + 1, cost_usd = cost_usd + ? WHERE id = ?')
        ->execute([$cost, $conv]);
 }
 
-function rt_cost(array $u): float {
-    return ($u['input_tokens'] ?? 0) * PRICE_IN
-         + ($u['output_tokens'] ?? 0) * PRICE_OUT
-         + ($u['cache_read_input_tokens'] ?? 0) * PRICE_CACHE_READ
-         + ($u['cache_creation_input_tokens'] ?? 0) * PRICE_CACHE_WRITE;
+function rt_cost(array $u, string $model): float {
+    [$in, $out, $read, $write] = PRICES[$model] ?? PRICES['claude-sonnet-5-5'];
+    return (($u['input_tokens'] ?? 0) * $in
+          + ($u['output_tokens'] ?? 0) * $out
+          + ($u['cache_read_input_tokens'] ?? 0) * $read
+          + ($u['cache_creation_input_tokens'] ?? 0) * $write) / 1e6;
 }
 
 /**

@@ -1,7 +1,8 @@
 /* Returtax — Marcel, asistentul conversațional.
  *
- * Mesajele scrise liber merg la AI (api/chat.php → Claude Haiku 5.5).
- * Butoanele de sugestii și pașii pentru nume / telefon rămân locale (fără cost).
+ * Tot ce scrie omul, inclusiv butoanele de sugestii, merge la AI (api/chat.php), ca Marcel
+ * să știe mereu ce s-a discutat. Doar pașii pentru nume / telefon / ora apelului rămân locali.
+ * Conversația se păstrează în sessionStorage, deci rămâne și după reîncărcarea paginii.
  * Dacă AI-ul nu răspunde (local, fără server, sau peste limită), Marcel trece
  * automat pe răspunsurile pe bază de cuvinte-cheie de mai jos.
  */
@@ -24,6 +25,17 @@
   // Conversația, ca text simplu, pentru AI
   const history = [];
   const conversationId = () => (window.rtConversationId ? window.rtConversationId() : "");
+
+  // Ce s-a afișat în chat, ca să refacem conversația dacă pagina se reîncarcă
+  const SAVE_KEY = "rt_chat";
+  let transcript = [];
+  let restoring = false;
+  function saveChat() {
+    if (restoring) return;
+    try {
+      sessionStorage.setItem(SAVE_KEY, JSON.stringify({ transcript: transcript.slice(-60), expecting, lead }));
+    } catch (e) {}
+  }
 
   // Mesajele care nu trec prin AI se salvează separat, pentru panoul de admin
   function logMessage(role, content, source) {
@@ -53,7 +65,11 @@
     li.appendChild(b);
     log.appendChild(li);
     remember("user", text);
-    if (logSource) logMessage("user", text, logSource);
+    if (!restoring) {
+      if (logSource) logMessage("user", text, logSource);
+      transcript.push({ role: "user", text });
+      saveChat();
+    }
     scrollDown();
   }
 
@@ -79,7 +95,11 @@
     log.appendChild(li);
     const text = li.querySelector(".bubble").textContent;
     remember("assistant", text);
-    if (!fromAI) logMessage("assistant", text, "script");
+    if (!restoring) {
+      if (!fromAI) logMessage("assistant", text, "script");
+      transcript.push({ role: "assistant", html });
+      saveChat();
+    }
     setLive(bot);
     scrollDown();
   }
@@ -162,18 +182,26 @@
     const text = raw.trim();
     if (!text) return;
     startChat();
-    const viaAI = !fromChip && expecting === null;
+    // După ce Marcel propune apelul: doar un „da” pornește pașii pentru telefon; orice altă întrebare merge la AI
+    if (expecting === "vrea_apel") {
+      const t = norm(text);
+      const yes = t === "da, sa ma sune" ||
+        (/\b(da|ok|sigur|bine|vreau|sunati|suna|sune)\b/.test(t) && t.length < 40 && !text.includes("?"));
+      if (!yes && t !== "mai am o intrebare") expecting = null;
+    }
+    const viaAI = expecting === null;
     addUser(text, viaAI ? null : fromChip ? "buton" : "script");
     setChips([]);
-    if (viaAI) return askAI(text);
+    if (viaAI) return askAI(text, fromChip);
     replyTo(text);
   }
 
   /* ---------- Marcel cu AI ---------- */
   let aiBusy = false;
 
-  async function askAI(text) {
-    if (aiBusy) { logMessage("user", text, "script"); return replyTo(text); }
+  async function askAI(text, fromChip) {
+    const source = fromChip ? "buton" : "script";
+    if (aiBusy) { logMessage("user", text, source); return replyTo(text); }
     aiBusy = true;
     lead.note.push(text);
     const typing = showTyping();
@@ -183,7 +211,7 @@
       const res = await fetch("/api/chat.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversation_id: conversationId(), messages: history.slice(-14) }),
+        body: JSON.stringify({ conversation_id: conversationId(), source: fromChip ? "buton" : "ai", messages: history.slice(-24) }),
         signal: ctrl.signal,
       });
       const data = await res.json();
@@ -196,11 +224,12 @@
       } else {
         setChips(["Vreau să mă sune cineva", "Cât costă?"]);
       }
+      saveChat();
     } catch (e) {
       // Fără AI (local, eroare sau limită atinsă): răspunsurile pe bază de cuvinte-cheie
       typing.remove();
       lead.note.pop();
-      logMessage("user", text, "script");
+      logMessage("user", text, source);
       replyTo(text);
     } finally {
       clearTimeout(timer);
@@ -533,6 +562,20 @@
       handle(text, true);
     },
   };
-  setChips(CHIPS_MAIN);
+  let saved = null;
+  try { saved = JSON.parse(sessionStorage.getItem(SAVE_KEY) || "null"); } catch (e) {}
+  if (saved && Array.isArray(saved.transcript) && saved.transcript.length) {
+    restoring = true;
+    startChat();
+    saved.transcript.forEach((m) => (m.role === "user" ? addUser(m.text) : addBot(m.html)));
+    transcript = saved.transcript;
+    expecting = saved.expecting || null;
+    Object.assign(lead, saved.lead || {});
+    restoring = false;
+    setChips(expecting === "vrea_apel" ? ["Da, să mă sune", "Mai am o întrebare"]
+      : expecting === null ? ["Vreau să mă sune cineva", "Cât costă?"] : []);
+  } else {
+    setChips(CHIPS_MAIN);
+  }
   if (window.matchMedia("(hover: hover)").matches) input.focus(); // pe telefon nu deschidem tastatura singuri
 })();
