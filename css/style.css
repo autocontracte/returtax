@@ -450,12 +450,47 @@ body.chatting .note { order: 0; }
 .compare-card-good .compare-num { color: var(--blue); text-decoration: none; }
 .compare-card-good .compare-label { color: #c3cad6; }
 
-/* Caseta de transparență */
-.glass-stage { margin-top: 32px; }
-.warning { padding: 24px 22px; border-radius: 26px; }
-.warning h3 { margin: 0 0 10px; font-size: 1.15rem; color: var(--ink); }
-.warning p { margin: 0 0 10px; line-height: 1.65; }
-.warning p:last-child { margin-bottom: 0; }
+/* Transparență: panoul închis, cu cele două drumuri ale banilor */
+.transparency {
+  margin-top: 36px; padding: 26px 20px; border-radius: 28px; color: #fff;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(0, 168, 255, .22), transparent 55%),
+    var(--glass-dark-bg);
+  box-shadow: var(--glass-dark-shadow), 0 30px 60px -30px rgba(11, 92, 173, .55);
+}
+.transparency-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+.shield {
+  flex: 0 0 56px; height: 56px; display: grid; place-items: center; border-radius: 18px;
+  background: rgba(0, 168, 255, .16); color: var(--blue);
+  box-shadow: inset 0 0 0 1px rgba(0, 168, 255, .35);
+}
+.transparency-kicker { margin: 0 0 2px; font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); }
+.transparency h3 { margin: 0; font-family: var(--head); font-weight: 400; font-size: 2.1rem; line-height: 1; letter-spacing: .5px; }
+
+.paths { display: grid; gap: 12px; }
+.path { padding: 18px; border-radius: 20px; }
+.path p { margin: 10px 0 0; font-size: .92rem; line-height: 1.6; }
+.path-title { margin: 0 !important; font-weight: 700; font-size: .95rem !important; display: flex; gap: 8px; align-items: center; }
+.path-bad { background: rgba(255, 255, 255, .04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); color: #aab3c2; }
+.path-bad .path-title span { color: #f87171; }
+.path-bad strong { color: #e2e8f0; }
+.path-good { background: rgba(0, 168, 255, .1); box-shadow: inset 0 0 0 1.5px rgba(0, 168, 255, .55); color: #e2e8f0; }
+.path-good .path-title { color: #fff; }
+.path-good .path-title span { color: var(--blue); }
+.path-good strong { color: #fff; }
+
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.flow-step { padding: 6px 12px; border-radius: 999px; font-size: .82rem; font-weight: 600; background: rgba(255, 255, 255, .08); color: #e2e8f0; }
+.path-bad .flow-step { color: #aab3c2; }
+.flow-you { background: var(--blue); color: var(--ink); }
+.flow-arrow { flex: 0 0 auto; opacity: .6; }
+
+.promises { list-style: none; margin: 20px 0 0; padding: 18px 0 0; border-top: 1px solid rgba(255, 255, 255, .1); display: grid; gap: 10px; }
+.promises li { display: flex; gap: 10px; align-items: center; font-weight: 600; font-size: .95rem; }
+.promises span {
+  flex: 0 0 24px; height: 24px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--blue); color: var(--ink); font-size: .75rem; font-weight: 800;
+}
 
 /* Preț */
 .pricing { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 760px; }
@@ -835,7 +870,11 @@ body.chatting .note { order: 0; }
   .price-when, .price-desc { font-size: .95rem; }
   .compare-card { padding: 26px 22px; }
   .compare-num { font-size: 3rem; }
-  .warning { padding: 32px 34px; }
+  .transparency { padding: 34px 36px; }
+  .transparency h3 { font-size: 2.6rem; }
+  .paths { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .path { padding: 22px; }
+  .promises { grid-template-columns: repeat(3, auto); justify-content: start; gap: 12px 28px; }
   .page-hero { padding-top: 64px; }
   .page-hero h1 { font-size: 3.6rem; }
 }
