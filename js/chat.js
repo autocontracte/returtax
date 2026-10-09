@@ -1,9 +1,9 @@
-/* Returtax — Marcel, asistentul conversațional (versiune locală, fără server).
+/* Returtax — Marcel, asistentul conversațional.
  *
- * Pentru început, asistentul înțelege câteva teme prin cuvinte-cheie și
- * ghidează omul spre o discuție telefonică cu un coleg. Mai târziu,
- * funcția `replyTo()` poate fi înlocuită cu un apel către un backend AI
- * (ex. un Cloudflare Worker), fără să schimbăm interfața.
+ * Mesajele scrise liber merg la AI (api/chat.php → Claude Haiku 5.5).
+ * Butoanele de sugestii și pașii pentru nume / telefon rămân locale (fără cost).
+ * Dacă AI-ul nu răspunde (local, fără server, sau peste limită), Marcel trece
+ * automat pe răspunsurile pe bază de cuvinte-cheie de mai jos.
  */
 (function () {
   "use strict";
@@ -21,6 +21,13 @@
   const lead = { ani: null, dnummerMinid: null, nume: null, telefon: null, cand: null, note: [] };
   // Ce așteptăm ca răspuns următor (null = conversație liberă)
   let expecting = null;
+  // Conversația, ca text simplu, pentru AI
+  const history = [];
+  function remember(role, text) {
+    const last = history[history.length - 1];
+    if (last && last.role === role) last.content += "\n" + text;
+    else history.push({ role, content: text });
+  }
 
   /* ---------- Afișarea mesajelor ---------- */
   function scrollDown() { log.scrollTop = log.scrollHeight; }
@@ -33,6 +40,7 @@
     b.textContent = text;
     li.appendChild(b);
     log.appendChild(li);
+    remember("user", text);
     scrollDown();
   }
 
@@ -56,6 +64,7 @@
     li.appendChild(bot);
     li.insertAdjacentHTML("beforeend", '<div class="bubble">' + html + "</div>");
     log.appendChild(li);
+    remember("assistant", li.querySelector(".bubble").textContent);
     setLive(bot);
     scrollDown();
   }
@@ -80,7 +89,7 @@
       b.type = "button";
       b.className = "chip";
       b.textContent = label;
-      b.addEventListener("click", () => handle(label));
+      b.addEventListener("click", () => handle(label, true));
       quick.appendChild(b);
     });
   }
@@ -134,13 +143,61 @@
   }
 
   /* ---------- Conversația ---------- */
-  function handle(raw) {
+  function handle(raw, fromChip) {
     const text = raw.trim();
     if (!text) return;
     startChat();
     addUser(text);
     setChips([]);
+    if (!fromChip && expecting === null) return askAI(text);
     replyTo(text);
+  }
+
+  /* ---------- Marcel cu AI ---------- */
+  let aiBusy = false;
+
+  async function askAI(text) {
+    if (aiBusy) return replyTo(text);
+    aiBusy = true;
+    lead.note.push(text);
+    const typing = showTyping();
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30000);
+    try {
+      const res = await fetch("/api/chat.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history.slice(-10) }),
+        signal: ctrl.signal,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok || !data.reply) throw new Error(data.error || res.status);
+      typing.remove();
+      addBot(formatReply(data.reply));
+      if (data.action === "call") {
+        expecting = "vrea_apel";
+        setChips(["Da, să mă sune", "Mai am o întrebare"]);
+      } else {
+        setChips(["Vreau să mă sune cineva", "Cât costă?"]);
+      }
+    } catch (e) {
+      // Fără AI (local, eroare sau limită atinsă): răspunsurile pe bază de cuvinte-cheie
+      typing.remove();
+      lead.note.pop();
+      replyTo(text);
+    } finally {
+      clearTimeout(timer);
+      aiBusy = false;
+    }
+  }
+
+  // Textul de la AI: totul escapat, apoi **îngroșat** și rânduri noi
+  function formatReply(text) {
+    return escapeHtml(text)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .split(/\n{2,}/)
+      .map((para) => "<p>" + para.replace(/\n/g, "<br>") + "</p>")
+      .join("");
   }
 
   function replyTo(text) {
@@ -455,7 +512,7 @@
   window.ReturTaxChat = {
     start(text) {
       window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-      handle(text);
+      handle(text, true);
     },
   };
   setChips(CHIPS_MAIN);
