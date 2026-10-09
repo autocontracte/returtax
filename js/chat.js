@@ -1,4 +1,4 @@
-/* ReturTax — Dexter, asistentul conversațional (versiune locală, fără server).
+/* Returtax — Marcel, asistentul conversațional (versiune locală, fără server).
  *
  * Pentru început, asistentul înțelege câteva teme prin cuvinte-cheie și
  * ghidează omul spre o discuție telefonică cu un coleg. Mai târziu,
@@ -18,7 +18,7 @@
   const STORE_KEY = "returtax_leads";
 
   // Ce știm despre om până acum
-  const lead = { ani: null, acte: null, nume: null, telefon: null, cand: null, note: [] };
+  const lead = { ani: null, dnummerMinid: null, nume: null, telefon: null, cand: null, note: [] };
   // Ce așteptăm ca răspuns următor (null = conversație liberă)
   let expecting = null;
 
@@ -36,14 +36,14 @@
     scrollDown();
   }
 
-  /* ---------- Dexter (avatarul asistentului) ---------- */
+  /* ---------- Marcel (avatarul asistentului) ---------- */
   function makeBot(extra) {
     const svg = tplBot.content.firstElementChild.cloneNode(true);
     if (extra) svg.classList.add(...extra.split(" "));
     return svg;
   }
 
-  // Doar ultimul Dexter din conversație e „viu” (clipește, se uită la ce scrieți)
+  // Doar ultimul Marcel din conversație e „viu” (clipește, se uită la ce scrieți)
   function setLive(bot) {
     log.querySelectorAll(".bot.live").forEach((t) => t.classList.remove("live", "listening"));
     bot.classList.add("live");
@@ -63,7 +63,7 @@
   function showTyping() {
     const li = document.createElement("li");
     li.className = "msg msg-bot typing";
-    li.setAttribute("aria-label", "Dexter scrie");
+    li.setAttribute("aria-label", "Marcel scrie");
     const bot = makeBot("avatar talking");
     li.appendChild(bot);
     li.insertAdjacentHTML("beforeend", '<div class="bubble"><i></i><i></i><i></i></div>');
@@ -106,15 +106,16 @@
   }
   const has = (t, words) => words.some((w) => t.includes(w));
 
-  const CHIPS_MAIN = ["Am lucrat în Norvegia", "Cât pot primi înapoi?", "Ce acte îmi trebuie?", "Vreau să mă sune cineva"];
+  const CHIPS_MAIN = ["Am lucrat în Norvegia", "Cât pot primi înapoi?", "Cât costă?", "Vreau să mă sune cineva"];
 
   function detectIntent(t) {
     if (has(t, ["suna", "sune", "sunat", "telefon", "apel", "vorbesc cu un om", "vorbi cu cineva", "om real"])) return "call";
-    if (has(t, ["cost", "comision", "platesc", "plata", "pret", "cat luati", "procent"])) return "cost";
-    if (has(t, ["acte", "document", "hartii", "ce trebuie", "ce imi trebuie", "fluturas", "payslip"])) return "docs";
+    if (has(t, ["cost", "comision", "platesc", "plata", "pret", "tarif", "gratis", "gratuit", "cat luati", "procent", "taxa voastra"])) return "cost";
+    if (has(t, ["acte", "document", "hartii", "ce trebuie", "ce imi trebuie", "d-nummer", "d nummer", "dnummer", "minid", "min id"])) return "docs";
     if (has(t, ["cat dureaza", "cand primesc", "cat timp", "termen", "luni"])) return "time";
     if (has(t, ["cat pot", "cati bani", "suma", "cat primesc", "inapoi", "returnare", "recuperez", "recupera"])) return "money";
     if (has(t, ["lucrat", "muncit", "norvegia", "norge", "am fost", "constructii", "pescarie", "santier"])) return "worked";
+    if (has(t, ["iban", "teapa", "inselat", "sigur", "incredere", "contul cui", "contul vostru", "contul meu", "unde vin banii", "cine primeste"])) return "safety";
     if (has(t, ["multumesc", "mersi", "multam"])) return "thanks";
     if (has(t, ["buna", "salut", "neata", "ziua", "seara"]) && t.length < 25) return "hello";
     return "unknown";
@@ -161,18 +162,25 @@
           ys.length
             ? "Am notat: <strong>" + ys.join(", ") + "</strong>. Mulțumesc!"
             : "Am notat. Mulțumesc!",
-          "Mai aveți fluturașii de salariu sau hârtia de la Skatteetaten (fisc-ul norvegian)? Nu e nicio problemă dacă nu le mai aveți — le putem cere noi.",
+          "Aveți <strong>D-nummer</strong> (numărul norvegian de identificare) și <strong>MinID</strong> (contul cu care intrați pe site-urile statului norvegian)?",
         ],
-        ["Da, le am", "Am doar o parte", "Nu le mai am"]
+        ["Am amândouă", "Am doar D-nummer", "Nu am / nu știu"]
       );
     }
 
     if (expecting === "acte") {
-      lead.acte = text;
+      lead.dnummerMinid = text;
       expecting = "vrea_apel";
+      const both = has(t, ["amandoua", "ambele", "am tot", "da"]) && !has(t, ["doar", "nu "]);
+      const onlyD = has(t, ["doar d", "numai d", "doar nummer", "fara minid", "nu am minid"]);
       return botSay(
         [
-          "Foarte bine. Din ce ne-ați spus, merită să verificăm situația dumneavoastră.",
+          both
+            ? "Perfect! Cu D-nummer și MinID putem lucra foarte repede."
+            : onlyD
+              ? "Bine, D-nummer e cel mai important. Pentru MinID vă explicăm noi, pas cu pas, cum îl faceți."
+              : "Nu-i nicio problemă. Vă ajutăm noi să aflați D-nummer-ul și să faceți MinID.",
+          "Din ce ne-ați spus, merită să verificăm situația dumneavoastră.",
           "Mulți români care au lucrat în Norvegia au plătit mai mult decât trebuia — mai ales cei care și-au plătit singuri drumul sau cazarea, sau au avut familia acasă în România.",
           "Cel mai simplu este să vă sune un coleg, gratuit, să vă explice exact ce urmează. Sunteți de acord?",
         ],
@@ -225,7 +233,7 @@
         expecting = "ani";
         return botSay(
           [
-            "Foarte bine că mi-ați scris! Eu sunt Dexter și asta e exact ce facem la ReturTax: recuperăm banii pe care statul norvegian i-a reținut în plus.",
+            "Foarte bine că mi-ați scris! Eu sunt Marcel și asta e exact ce facem la Returtax: recuperăm banii pe care statul norvegian i-a reținut în plus.",
             "În ce ani ați lucrat în Norvegia? Puteți scrie anii, de exemplu: <strong>2023, 2024</strong>.",
           ],
           yearChips()
@@ -242,30 +250,44 @@
         return botSay(
           [
             "<p>De obicei ne ajută:</p><ul>" +
+              "<li><strong>D-nummer</strong> — numărul norvegian de identificare</li>" +
+              "<li><strong>MinID</strong> — contul cu care intrați pe site-urile statului norvegian</li>" +
               "<li>buletinul sau pașaportul</li>" +
-              "<li>numărul norvegian (D-nummer sau fødselsnummer)</li>" +
-              "<li>fluturașii de salariu sau contractul</li>" +
               "<li>contul bancar (IBAN) unde vreți banii</li></ul>",
-            "Nu vă îngrijorați dacă vă lipsesc unele hârtii — multe le putem cere noi de la Skatteetaten.",
+            "Dacă nu le mai știți sau nu aveți MinID, nu vă îngrijorați — vă ajutăm noi să le recuperați.",
           ],
           ["Am lucrat în Norvegia", "Vreau să mă sune cineva"]
         );
       case "time":
         return botSay(
-          "De obicei durează câteva luni, în funcție de răspunsul fiscului norvegian. Vă ținem la curent la fiecare pas, la telefon, în română.",
+          "Depinde de Skatteetaten și de acte. Cu D-nummer și MinID în regulă, se poate rezolva în câteva săptămâni. Vă ținem la curent la fiecare pas, la telefon, în română.",
           ["Am lucrat în Norvegia", "Vreau să mă sune cineva"]
         );
       case "cost":
         return botSay(
-          "Verificarea este gratuită. Dacă nu recuperăm nimic, nu plătiți nimic. Colegul nostru vă spune exact comisionul la telefon, înainte să semnați ceva.",
-          ["Vreau să mă sune cineva", "Am lucrat în Norvegia"]
+          [
+            "<p>Prețul e simplu, fără procente:</p><ul>" +
+              "<li>dacă recuperați <strong>sub 1.000 €</strong>, nu plătiți <strong>nimic</strong>;</li>" +
+              "<li>dacă recuperați <strong>peste 1.000 €</strong>, plătiți doar <strong>100 € fix</strong>, oricât ar fi suma.</li></ul>",
+            "Verificarea este gratuită. Vreți să vedem cât puteți primi?",
+          ],
+          ["Am lucrat în Norvegia", "Vreau să mă sune cineva"]
         );
       case "call":
         return askName();
+      case "safety":
+        return botSay(
+          [
+            "Foarte bună întrebare! La noi, banii vin <strong>direct de la Skatteetaten, în contul dumneavoastră</strong>, pe numele dumneavoastră. În extras apare plata de la Skatteetaten.",
+            "Nu înregistrăm niciodată contul nostru bancar în profilul dumneavoastră de MinID. Vă recomandăm să nu acceptați acest lucru din partea nimănui — rambursarea ar ajunge mai întâi la acea persoană.",
+            "Colaborarea se face pe bază de contract semnat electronic, cu toate condițiile stabilite de la început.",
+          ],
+          ["Cât costă?", "Am lucrat în Norvegia"]
+        );
       case "thanks":
         return botSay("Cu mare drag! Mai pot să vă ajut cu ceva?", CHIPS_MAIN);
       case "hello":
-        return botSay("Bună ziua! Eu sunt Dexter. Spuneți-mi pe scurt: ați lucrat în Norvegia? În ce ani?", CHIPS_MAIN);
+        return botSay("Bună ziua! Eu sunt Marcel. Spuneți-mi pe scurt: ați lucrat în Norvegia? În ce ani?", CHIPS_MAIN);
       default:
         return botSay(
           [
@@ -300,7 +322,18 @@
       all.push(entry);
       localStorage.setItem(STORE_KEY, JSON.stringify(all));
     } catch (e) {}
-    console.info("[ReturTax] Lead nou:", entry);
+    const fd = new FormData();
+    fd.append("source", "chat");
+    fd.append("name", lead.nume || "");
+    fd.append("phone", lead.telefon || "");
+    fd.append("message", [
+      "Ani: " + (lead.ani || "-"),
+      "D-nummer / MinID: " + (lead.dnummerMinid || "-"),
+      "Când să sunăm: " + (lead.cand || "-"),
+      "Alte mesaje: " + (lead.note.join(" | ") || "-"),
+    ].join(" / "));
+    fd.append("consent", "chat");
+    fetch("/api/contact.php", { method: "POST", body: fd }).catch(() => {});
   }
 
   /* ---------- Formular ---------- */
@@ -311,21 +344,14 @@
     autosize();
     handle(v);
   });
-  // Căsuța crește după text; când e goală, încape tot textul-ajutor (pe telefon trece pe 2 rânduri)
+  // Căsuța crește după textul scris
   function autosize() {
     input.style.height = "auto";
-    const empty = !input.value;
-    if (empty) input.value = input.placeholder;
-    const h = input.scrollHeight;
-    if (empty) input.value = "";
-    input.style.height = Math.min(h, 160) + "px";
+    if (input.value) input.style.height = Math.min(input.scrollHeight, 160) + "px";
   }
-  autosize();
-  if (document.fonts) document.fonts.ready.then(autosize); // remăsurăm după ce se încarcă Montserrat
-  window.addEventListener("resize", autosize);
   input.addEventListener("input", () => {
     autosize();
-    // Dexter „ascultă” cât timp omul scrie
+    // Marcel „ascultă” cât timp omul scrie
     const typing = input.value.trim().length > 0;
     document.querySelectorAll(".bot.live").forEach((t) => t.classList.toggle("listening", typing));
   });
@@ -364,6 +390,57 @@
     });
   }
 
+  /* ---------- Ochii lui Marcel urmăresc cursorul (sau degetul) ---------- */
+  let pointer = null;
+  let lookFrame = 0;
+
+  function lookAt() {
+    lookFrame = 0;
+    document.querySelectorAll(".bot.live").forEach((svg) => {
+      const pupils = svg.querySelectorAll(".pupil");
+      const m = svg.getScreenCTM();
+      // Cât timp omul scrie, Marcel se uită la căsuța de text (din CSS)
+      if (!pointer || !m || svg.classList.contains("listening")) {
+        pupils.forEach((p) => (p.style.transform = ""));
+        return;
+      }
+      const target = new DOMPoint(pointer.x, pointer.y).matrixTransform(m.inverse());
+      svg.querySelectorAll(".eye").forEach((eye) => {
+        const white = eye.querySelector("circle");
+        const dx = target.x - white.cx.baseVal.value;
+        const dy = target.y - white.cy.baseVal.value;
+        const dist = Math.hypot(dx, dy) || 1;
+        const r = Math.min(18, dist / 6); // pupila nu iese din albul ochiului
+        eye.querySelector(".pupil").style.transform = "translate(" + (dx / dist) * r + "px," + (dy / dist) * r + "px)";
+      });
+    });
+  }
+  function scheduleLook() { if (!lookFrame) lookFrame = requestAnimationFrame(lookAt); }
+
+  const hasMouse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  if (hasMouse) {
+    window.addEventListener("pointermove", (e) => { pointer = { x: e.clientX, y: e.clientY }; scheduleLook(); }, { passive: true });
+    document.documentElement.addEventListener("mouseleave", () => { pointer = null; scheduleLook(); });
+    window.addEventListener("scroll", scheduleLook, { passive: true });
+    input.addEventListener("input", scheduleLook);
+  } else if (!reduceMotion) {
+    // Pe telefon nu există cursor: Marcel privește în mijloc și din când în când se uită în jur
+    const glances = [[-15, -4], [15, -4], [-12, 8], [12, 8], [0, -14], [-15, 0], [15, 0]];
+    (function wander() {
+      setTimeout(() => {
+        const [x, y] = glances[Math.floor(Math.random() * glances.length)];
+        document.querySelectorAll(".bot.live:not(.listening) .pupil").forEach((p) => {
+          p.style.transform = "translate(" + x + "px," + y + "px)";
+        });
+        setTimeout(() => {
+          document.querySelectorAll(".bot .pupil").forEach((p) => (p.style.transform = ""));
+          wander();
+        }, 900 + Math.random() * 700);
+      }, 2200 + Math.random() * 2800);
+    })();
+  }
+
   /* ---------- Început ---------- */
   // Ecran de start ca la ChatGPT: titlu + căsuță de scris. La primul mesaj titlul dispare.
   let started = false;
@@ -371,20 +448,16 @@
     if (started) return;
     started = true;
     document.body.classList.add("chatting");
-    window.scrollTo(0, 0);
   }
 
   document.getElementById("hero-bot").appendChild(makeBot("live"));
-  document.getElementById("year").textContent = new Date().getFullYear();
-
-  // Butonul „Începeți conversația” din josul paginii: urcăm la chat și deschidem căsuța de scris
-  document.querySelectorAll("[data-start-chat]").forEach((a) =>
-    a.addEventListener("click", (e) => {
-      e.preventDefault();
+  // Calculatorul (din site.js) poate porni conversația cu un mesaj gata scris
+  window.ReturTaxChat = {
+    start(text) {
       window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-      setTimeout(() => input.focus({ preventScroll: true }), reduceMotion ? 0 : 400);
-    })
-  );
+      handle(text);
+    },
+  };
   setChips(CHIPS_MAIN);
   if (window.matchMedia("(hover: hover)").matches) input.focus(); // pe telefon nu deschidem tastatura singuri
 })();

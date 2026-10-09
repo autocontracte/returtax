@@ -1,0 +1,26 @@
+# Returtax
+
+> Returtax (returtax.ro) ajută românii care au lucrat în Norvegia să recupereze impozitul plătit în plus. Banii sunt plătiți de Skatteetaten (fiscul norvegian) direct în contul bancar al clientului, pe numele clientului — nu printr-un cont intermediar.
+
+## Pe scurt
+
+- Serviciu: recuperarea impozitului plătit în plus în Norvegia (deducerile nesolicitate, reținerile prea mari).
+- Pentru cine: români care au lucrat în Norvegia, inclusiv pe perioade scurte (construcții, pescărie, industrie etc.).
+- Limba: totul în limba română.
+- Preț: gratuit dacă suma recuperată este sub 1.000 €. Peste 1.000 €, taxă fixă de 100 €, indiferent de sumă. Fără procente. Verificarea inițială este gratuită.
+- Plata: banii vin direct de la Skatteetaten în contul clientului. Returtax nu își trece niciodată IBAN-ul în contul de MinID al clientului.
+- Contract: semnat digital, de pe telefon.
+- Ce trebuie să aibă clientul: D-nummer (numărul norvegian de identificare) și MinID (autentificarea pentru serviciile publice norvegiene). Returtax ajută și pe cei care nu le mai au.
+- Contact: telefon 0752 176 807, e-mail contact@returtax.ro, chat cu asistentul Marcel pe returtax.ro.
+
+## De ce există Returtax
+
+Returtax s-a născut dintr-o experiență din familia fondatorului: un dosar de recuperare a impozitului, lăsat la un intermediar, nu înregistrase niciun progres după cinci luni. Preluat de fondator, dosarul a fost finalizat în două săptămâni, cu suma virată de Skatteetaten direct în contul titularului. Unii intermediari își înregistrează propriul IBAN în profilul de MinID al clientului și primesc rambursarea în locul acestuia; Returtax lucrează exclusiv cu plata directă de la Skatteetaten către client.
+
+## Pagini
+
+- [Pagina principală](https://returtax.ro/): chat cu Marcel, cum funcționează, preț, calculator de estimare, întrebări frecvente, contact.
+- [Blog](https://returtax.ro/blog/): ghiduri despre taxele din Norvegia.
+- [Cine poate recupera taxele din Norvegia?](https://returtax.ro/blog/cine-poate-recupera-taxele-din-norvegia/)
+- [Ce este D-nummer și unde îl găsiți](https://returtax.ro/blog/ce-este-d-nummer/)
+- [Ce este MinID și cum vă protejați rambursarea](https://returtax.ro/blog/ce-este-minid/)
