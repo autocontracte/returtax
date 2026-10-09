@@ -10,6 +10,9 @@ Articolele se scriu în content/blog/<slug>.html, cu un antet ca acesta:
     -->
     <p>Conținutul articolului…</p>
 
+Paginile statice (termeni, confidențialitate) se scriu la fel, în content/pagini/<slug>.html,
+și se publică la /<slug>/.
+
 Rulare (din folderul proiectului):
 
     python tools/genereaza-blog.py
@@ -24,6 +27,7 @@ from pathlib import Path
 SITE = "https://returtax.ro"
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "content" / "blog"
+PAGES = ROOT / "content" / "pagini"
 OUT = ROOT / "blog"
 
 PHONE_HREF = "+40752176807"
@@ -74,7 +78,7 @@ def head(title, description, url, og_type, ld):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20261009210259">
+  <link rel="stylesheet" href="/css/style.css?v=20261009220207">
   <script type="application/ld+json">
 {json.dumps(ld, ensure_ascii=False, indent=2)}
   </script>
@@ -124,11 +128,13 @@ def footer():
 {links}
       </nav>
       <p class="footer-contact"><a href="tel:{PHONE_HREF}">{PHONE_TEXT}</a> · <a href="mailto:{EMAIL}">{EMAIL}</a></p>
+      <p class="footer-legal"><a href="/termeni/">Termeni și condiții</a> · <a href="/confidentialitate/">Confidențialitate</a></p>
+      <p class="footer-company">Returtax este un serviciu oferit de OLARU DRAGOȘ-IULIAN PFA · CUI 52743741 · F2025041319007 · Galați</p>
       <p class="copy"><a href="/admin/" class="copy-link" rel="nofollow">©</a> <span class="year">2026</span> Returtax.ro</p>
     </div>
   </footer>
 
-  <script src="/js/site.js?v=20261009210259"></script>
+  <script src="/js/site.js?v=20261009220207"></script>
 </body>
 </html>
 """
@@ -261,9 +267,40 @@ def build_index(posts):
     (OUT / "index.html").write_text(page, encoding="utf-8")
 
 
-def build_sitemap(posts):
+def build_page(p):
+    url = f"{SITE}/{p['slug']}/"
+    ld = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {"@type": "WebPage", "name": p["title"], "description": p["description"], "url": url,
+             "inLanguage": "ro-RO", "dateModified": p["date"], "publisher": ORG},
+            breadcrumbs_ld([("Acasă", SITE + "/"), (p["title"], url)]),
+        ],
+    }
+    e = html.escape
+    page = head(f"{p['title']} | Returtax", p["description"], url, "website", ld)
+    page += f"""
+  <main id="continut">
+    <header class="page-hero">
+      <p class="breadcrumbs"><a href="/">Acasă</a> › {e(p['title'])}</p>
+      <h1>{e(p['title'])}</h1>
+    </header>
+    <article class="article legal">
+      <p class="article-meta">Ultima actualizare: <time datetime="{p['date']}">{ro_date(p['date'])}</time></p>
+{p['body']}
+    </article>
+  </main>
+"""
+    page += footer()
+    out = ROOT / p["slug"] / "index.html"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(page, encoding="utf-8")
+
+
+def build_sitemap(posts, pages=()):
     urls = [(SITE + "/", posts[0]["date"] if posts else None, "1.0"), (SITE + "/blog/", posts[0]["date"] if posts else None, "0.8")]
     urls += [(f"{SITE}/blog/{p['slug']}/", p.get("updated", p["date"]), "0.7") for p in posts]
+    urls += [(f"{SITE}/{p['slug']}/", p["date"], "0.3") for p in pages]
     rows = "\n".join(
         f"  <url><loc>{u}</loc>" + (f"<lastmod>{d}</lastmod>" if d else "") + f"<priority>{pr}</priority></url>"
         for u, d, pr in urls
@@ -280,8 +317,11 @@ def main():
     for p in posts:
         build_post(p)
     build_index(posts)
-    build_sitemap(posts)
-    print(f"Gata: {len(posts)} articole, blog/index.html și sitemap.xml.")
+    pages = [read_post(p) for p in sorted(PAGES.glob("*.html"))]
+    for p in pages:
+        build_page(p)
+    build_sitemap(posts, pages)
+    print(f"Gata: {len(posts)} articole, {len(pages)} pagini, blog/index.html și sitemap.xml.")
 
 
 if __name__ == "__main__":

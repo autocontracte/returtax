@@ -682,6 +682,10 @@ body.chatting .note { order: 0; }
 .footer-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; }
 .footer-nav a { color: var(--ink); text-decoration: none; font-weight: 600; }
 .copy { font-size: .78rem; }
+.footer-legal a { color: var(--ink); font-weight: 600; }
+.footer-company { max-width: 40em; font-size: .78rem; line-height: 1.5; }
+.consent a, .note a { color: inherit; }
+.legal h2 { font-size: 1.2rem; }
 .copy-link { color: inherit; text-decoration: none; cursor: default; } /* intrarea discretă în panoul de admin */
 
 /* =========================================================

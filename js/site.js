@@ -220,7 +220,7 @@
     callDialog.innerHTML =
       '<button type="button" class="modal-close" aria-label="Închide" data-close>' + CLOSE_ICON + "</button>" +
       '<p class="kicker">Contact</p>' +
-      '<h2 id="call-title">Vorbiți cu un consultant</h2>' +
+      '<h2 id="call-title">Vorbiți cu echipa Returtax</h2>' +
       '<a class="call-number" href="tel:' + PHONE_TEL + '">' + PHONE_DISPLAY + "</a>" +
       '<p class="call-hours">Luni – Vineri, 9:00 – 18:00</p>' +
       '<div class="call-qr">' +
@@ -263,7 +263,7 @@
     '<img src="/assets/echipa-2.webp" alt="" width="22" height="22">' +
     "</div>" +
     '<div class="wa-head-text"><p class="wa-title">Echipa Returtax</p>' +
-    '<p class="wa-sub"><span class="wa-dot"></span>Consultanți disponibili acum</p></div>' +
+    '<p class="wa-sub"><span class="wa-dot"></span>Echipa e disponibilă acum</p></div>' +
     '<button type="button" class="wa-close" aria-label="Închide">' + CLOSE_ICON + "</button>" +
     "</header>" +
     '<div class="wa-body" aria-live="polite"></div>';
@@ -310,7 +310,7 @@
 
   async function startFlow() {
     waBody.innerHTML = "";
-    await ask("Bună ziua! 👋 Ca să vă punem în legătură cu consultantul potrivit, aveți doar <strong>3 întrebări scurte</strong>.", 150);
+    await ask("Bună ziua! 👋 Ca să vă punem în legătură cu persoana potrivită din echipă, aveți doar <strong>3 întrebări scurte</strong>.", 150);
     await ask("<strong>1/3</strong> · Pentru ce perioadă doriți să recuperați taxele?");
     choices(["Anul trecut", "Ultimii 2–3 ani", "Mai mulți ani", "Nu știu sigur"], async (v) => {
       answers.years = v;
@@ -339,17 +339,17 @@
       answers.name = field.value.trim();
       form.remove();
       if (answers.name) say(escape(answers.name), "user");
-      matchConsultant();
+      matchColleague();
     });
   }
 
   // „Căutăm persoana potrivită” — dă impresia unei echipe care preia cererea
-  async function matchConsultant() {
+  async function matchColleague() {
     await wait(300);
     const box = say(
       '<div class="wa-search"><span class="wa-spinner" aria-hidden="true"></span>' +
       "<div><strong>Căutăm persoana potrivită pentru dumneavoastră…</strong>" +
-      '<p class="wa-status">Verificăm consultanții disponibili</p></div></div>'
+      '<p class="wa-status">Verificăm cine din echipă e disponibil</p></div></div>'
     );
     const status = box.querySelector(".wa-status");
     await wait(1100);
@@ -359,7 +359,7 @@
     await wait(1000);
     box.innerHTML =
       '<div class="wa-found"><span class="wa-avatar" aria-hidden="true"><img src="/assets/echipa-2.webp" alt="" width="26" height="26"><span class="wa-check">✓</span></span>' +
-      "<div><strong>Am găsit un consultant disponibil.</strong>" +
+      "<div><strong>Am găsit un coleg disponibil.</strong>" +
       "<p>Vă răspunde pe WhatsApp, de obicei în câteva minute.</p></div></div>";
 
     // Salvăm în panoul de admin cine a ajuns la WhatsApp

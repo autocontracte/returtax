@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20261009210259">
+  <link rel="stylesheet" href="/css/style.css?v=20261009220207">
 
   <script type="application/ld+json">
   {
@@ -35,6 +35,9 @@
         "@type": "Organization",
         "@id": "https://returtax.ro/#org",
         "name": "Returtax",
+        "legalName": "OLARU DRAGOȘ-IULIAN PERSOANĂ FIZICĂ AUTORIZATĂ",
+        "taxID": "52743741",
+        "address": { "@type": "PostalAddress", "addressLocality": "Galați", "addressRegion": "Galați", "addressCountry": "RO" },
         "url": "https://returtax.ro/",
         "logo": "https://returtax.ro/assets/logo.png",
         "email": "contact@returtax.ro",
@@ -193,7 +196,7 @@
         </div>
       </form>
 
-      <p class="note">Banii vin <strong>direct de la Skatteetaten</strong>, în contul dumneavoastră<br>Gratuit sub 1.000 € · Peste 1.000 €, doar 100 € fix</p>
+      <p class="note">Banii vin <strong>direct de la Skatteetaten</strong>, în contul dumneavoastră<br>Gratuit sub 1.000 € · Peste 1.000 €, doar 100 € fix · <a href="/termeni/">Termeni</a> · <a href="/confidentialitate/">Confidențialitate</a></p>
     </main>
 
     <a href="#calculator" class="scroll-hint">
@@ -523,7 +526,7 @@
       <h2 id="contact-title">Luați legătura cu noi</h2>
       <div class="contact">
         <div class="contact-info">
-          <p>Preferați să discutați cu un consultant? Lăsați-ne datele de contact și vă sunăm noi, gratuit.</p>
+          <p>Preferați să vorbiți direct cu cineva din echipă? Lăsați-ne datele de contact și vă sunăm noi, gratuit.</p>
           <ul>
             <li><span>Telefon</span><a href="tel:+40752176807">0752 176 807</a></li>
             <li><span>E-mail</span><a href="mailto:contact@returtax.ro">contact@returtax.ro</a></li>
@@ -556,7 +559,7 @@
             <label for="cf-message">Mesaj <span class="opt">(opțional)</span></label>
             <textarea id="cf-message" name="message" rows="4" placeholder="Ex: Am lucrat în 2023 și 2024 în Norvegia, pe șantier."></textarea>
           </div>
-          <label class="consent"><input type="checkbox" name="consent" required> Sunt de acord să fiu contactat(ă) de Returtax în legătură cu cererea mea.</label>
+          <label class="consent"><input type="checkbox" name="consent" required> Sunt de acord să fiu contactat(ă) de Returtax în legătură cu cererea mea și am citit <a href="/termeni/" target="_blank">termenii</a> și <a href="/confidentialitate/" target="_blank">politica de confidențialitate</a>.</label>
           <button type="submit" class="btn btn-dark">Trimite</button>
           <p class="form-status" role="status" aria-live="polite"></p>
         </form>
@@ -571,7 +574,7 @@
     </button>
     <p class="kicker">Verificare gratuită</p>
     <h2 id="calc-dialog-title">Aflați suma exactă</h2>
-    <p class="modal-lead">Estimarea dumneavoastră: <strong id="calc-dialog-estimate">—</strong>. Lăsați-ne datele de contact și un consultant vă sună pentru calculul exact.</p>
+    <p class="modal-lead">Estimarea dumneavoastră: <strong id="calc-dialog-estimate">—</strong>. Lăsați-ne datele de contact și un coleg vă sună pentru calculul exact.</p>
     <form class="lead-form" action="/api/contact.php" method="post">
       <input type="hidden" name="source" value="calculator">
       <input type="hidden" name="message" id="calc-dialog-message" value="">
@@ -587,7 +590,7 @@
         <label for="cd-phone">Telefon</label>
         <input id="cd-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="ex. 0722 123 456">
       </div>
-      <label class="consent"><input type="checkbox" name="consent" required> Sunt de acord să fiu contactat(ă) de Returtax în legătură cu cererea mea.</label>
+      <label class="consent"><input type="checkbox" name="consent" required> Sunt de acord să fiu contactat(ă) de Returtax în legătură cu cererea mea și am citit <a href="/termeni/" target="_blank">termenii</a> și <a href="/confidentialitate/" target="_blank">politica de confidențialitate</a>.</label>
       <button type="submit" class="btn btn-dark">Vreau să fiu sunat</button>
       <p class="form-status" role="status" aria-live="polite"></p>
     </form>
@@ -608,6 +611,8 @@
         <a href="/#contact">Contact</a>
       </nav>
       <p class="footer-contact"><a href="tel:+40752176807">0752 176 807</a> · <a href="mailto:contact@returtax.ro">contact@returtax.ro</a></p>
+      <p class="footer-legal"><a href="/termeni/">Termeni și condiții</a> · <a href="/confidentialitate/">Confidențialitate</a></p>
+      <p class="footer-company">Returtax este un serviciu oferit de OLARU DRAGOȘ-IULIAN PFA · CUI 52743741 · F2025041319007 · Galați</p>
       <p class="copy"><a href="/admin/" class="copy-link" rel="nofollow">©</a> <span class="year">2026</span> Returtax.ro</p>
     </div>
   </footer>
@@ -637,7 +642,7 @@
     </svg>
   </template>
 
-  <script src="/js/site.js?v=20261009210259"></script>
-  <script src="/js/chat.js?v=20261009210259"></script>
+  <script src="/js/site.js?v=20261009220207"></script>
+  <script src="/js/chat.js?v=20261009220207"></script>
 </body>
 </html>

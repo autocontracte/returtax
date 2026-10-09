@@ -16,7 +16,6 @@
   const micBtn = document.getElementById("mic-btn");
 
   const tplBot = document.getElementById("bot-tpl");
-  const STORE_KEY = "returtax_leads";
 
   // Ce știm despre om până acum
   const lead = { ani: null, dnummerMinid: null, nume: null, telefon: null, cand: null, note: [] };
@@ -499,12 +498,6 @@
 
   // Deocamdată salvăm local. TODO: trimitere către backend (Cloudflare Worker / e-mail).
   function saveLead() {
-    const entry = Object.assign({ data: new Date().toISOString() }, lead);
-    try {
-      const all = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
-      all.push(entry);
-      localStorage.setItem(STORE_KEY, JSON.stringify(all));
-    } catch (e) {}
     const fd = new FormData();
     fd.append("source", "chat");
     fd.append("name", lead.nume || "");

@@ -9,7 +9,8 @@
 - Limba: totul în limba română.
 - Preț: gratuit dacă suma recuperată este sub 1.000 €. Peste 1.000 €, taxă fixă de 100 €, indiferent de sumă. Fără procente. Verificarea inițială este gratuită.
 - Plata: banii vin direct de la Skatteetaten în contul clientului. Returtax nu își trece niciodată IBAN-ul în contul de MinID al clientului.
-- Contract: semnat digital, de pe telefon.
+- Contract: semnat electronic, de pe telefon.
+- Natura serviciului: ajutor administrativ pentru un proces pe care clientul îl poate face și singur la Skatteetaten; nu este consultanță fiscală. Restituirea nu este garantată — decizia aparține Skatteetaten.
 - Ce trebuie să aibă clientul: D-nummer (numărul norvegian de identificare) și MinID (autentificarea pentru serviciile publice norvegiene). Returtax ajută și pe cei care nu le mai au.
 - Contact: telefon 0752 176 807, e-mail contact@returtax.ro, chat cu asistentul Marcel pe returtax.ro.
 
@@ -26,6 +27,9 @@
 Returtax s-a născut dintr-o experiență din familia fondatorului: un dosar de recuperare a impozitului, lăsat la un intermediar, nu înregistrase niciun progres după cinci luni. Preluat de fondator, dosarul a fost finalizat în două săptămâni, cu suma virată de Skatteetaten direct în contul titularului. Unii intermediari își înregistrează propriul IBAN în profilul de MinID al clientului și primesc rambursarea în locul acestuia; Returtax lucrează exclusiv cu plata directă de la Skatteetaten către client.
 
 ## Pagini
+
+- [Termeni și condiții](https://returtax.ro/termeni/): serviciu de ajutor administrativ, fără garanția rezultatului; operator OLARU DRAGOȘ-IULIAN PFA, CUI 52743741.
+- [Politica de confidențialitate](https://returtax.ro/confidentialitate/)
 
 - [Pagina principală](https://returtax.ro/): chat cu Marcel, cum funcționează, preț, calculator de estimare, întrebări frecvente, contact.
 - [Blog](https://returtax.ro/blog/): ghiduri despre taxele din Norvegia.
