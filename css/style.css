@@ -109,13 +109,12 @@ a { color: var(--blue-deep); }
 .nav a:hover { color: var(--ink); }
 
 .call {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  width: 44px; height: 44px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 42px; padding: 0 14px; border-radius: 999px;
   font: 600 .88rem/1 var(--body); color: var(--ink); text-decoration: none;
   border: 1px solid var(--line); background: #fff;
   transition: background .15s;
 }
-.call span { display: none; }
 .call:hover { background: var(--soft); }
 
 .menu-btn {
@@ -214,21 +213,16 @@ a { color: var(--blue-deep); }
 
 /* ---------- Starea „conversație” ---------- */
 body.chatting .app { justify-content: flex-start; padding-bottom: 0; }
+body.chatting .screen { padding-bottom: 48px; } /* valul calculatorului începe aici */
 body.chatting .intro,
 body.chatting .scroll-hint { display: none; }
 body.chatting .chat-log { display: flex; }
 body.chatting .quick-replies { order: 0; justify-content: flex-start; margin-top: 0; padding-bottom: 10px; }
 body.chatting .note { order: 0; }
-/* În timpul conversației ecranul e doar chat-ul (ca o aplicație); meniul le arată la cerere */
-body.chatting:not(.browsing) .info,
-body.chatting:not(.browsing) .site-footer { display: none; }
-body.chatting .composer { flex-wrap: nowrap; padding: 6px 6px 6px 16px; }
-body.chatting .composer textarea { flex: 1 1 auto; }
-body.chatting .composer-actions { margin-left: 0; }
 @media (max-width: 639px) { body.chatting .note { display: none; } body.chatting .composer { margin-bottom: max(10px, env(safe-area-inset-bottom)); } }
 
 .chat-log {
-  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
   list-style: none; margin: 0; padding: 16px 2px 24px;
   flex-direction: column; gap: 22px;
   scrollbar-width: thin;
@@ -283,6 +277,19 @@ body.chatting .composer-actions { margin-left: 0; }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes drop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 
+/* ---------- Butoane de contact (în mesajele lui Marcel și în secțiunea de contact) ---------- */
+.msg-actions, .contact-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.contact-actions .btn { min-height: 44px; padding: 0 18px; font-size: .92rem; }
+.msg-actions .btn {
+  min-height: 40px; padding: 0 16px 0 12px; gap: 7px;
+  font: 600 .88rem/1 var(--body); color: var(--ink);
+  background: #fff; border: 1px solid #d3dae4; box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+}
+.msg-actions .btn:hover { background: var(--soft); border-color: #b8c3d1; }
+.msg-actions .btn svg { width: 18px; height: 18px; color: var(--ink); }
+.msg-actions .is-wa svg { color: #1fae56; }
+.bubble a[href^="tel:"]:not(.btn) { color: var(--blue-deep); font-weight: 600; white-space: nowrap; }
+
 /* ---------- Formularul Da / Nu din chat ---------- */
 .msg-form { display: block; animation: rise .25s ease-out; }
 .yesno {
@@ -319,30 +326,30 @@ body.chatting .composer-actions { margin-left: 0; }
 .chip:hover { background: var(--soft); border-color: #cfd6e0; }
 
 /* ---------- Căsuța de scris ---------- */
-/* Pe telefon: textul pe tot rândul de sus, butoanele dedesubt (ca în ChatGPT pe mobil) */
+/* Un singur rând: textul, microfonul și butonul de trimitere pe aceeași linie */
 .composer {
   flex: 0 0 auto;
-  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0 4px;
-  padding: 6px 6px 6px 16px;
+  display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 2px;
+  padding: 5px 5px 5px 14px;
   background: #fff; border: 1px solid var(--line); border-radius: 26px;
   box-shadow: 0 2px 6px rgba(15, 23, 42, .04), 0 12px 32px -12px rgba(15, 23, 42, .12);
   transition: border-color .15s;
 }
 .composer:focus-within { border-color: #c4d3e6; }
 .composer textarea {
-  flex: 1 1 100%; min-width: 0; min-height: 44px; max-height: 160px; resize: none;
-  padding: 11px 0; border: 0; outline: 0; background: transparent;
+  flex: 1 1 auto; min-width: 0; min-height: 40px; max-height: 160px; resize: none;
+  padding: 9px 0; border: 0; outline: 0; background: transparent;
   font: 500 16px/1.4 var(--body); /* 16px: iOS nu mai face zoom la focus */
   color: var(--ink);
 }
 .composer textarea::placeholder {
   color: #8b95a7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-size: clamp(12.5px, 3.55vw, 16px); /* încape pe un rând și pe telefoanele înguste */
+  font-size: clamp(10.8px, 3.02vw, 16px); /* încape pe un rând și pe telefoanele înguste */
 }
-.composer-actions { display: flex; gap: 4px; margin-left: auto; }
+.composer-actions { display: flex; gap: 2px; flex: 0 0 auto; }
 .icon-btn {
-  display: grid; place-items: center; flex: 0 0 44px;
-  width: 44px; height: 44px; border: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; flex: 0 0 40px;
+  width: 40px; height: 40px; border: 0; border-radius: 50%; cursor: pointer;
   transition: background .15s;
 }
 .icon-btn.mic { background: transparent; color: var(--muted); }
@@ -747,10 +754,10 @@ body.chatting .composer-actions { margin-left: 0; }
 .chip:hover, .call:hover, .modal-close:hover, .btn-outline:hover { background: rgba(255, 255, 255, .95); }
 .post-card a:hover { border-color: var(--glass-edge); box-shadow: var(--glass-shadow), 0 18px 40px -16px rgba(15, 23, 42, .25); }
 .composer {
-  background: #fff; border-color: #d3dae4;
+  background: #fff; border: 1px solid #c3ccd8;
   box-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 28px -8px rgba(15, 23, 42, .28);
 }
-.composer:focus-within { border-color: #b8c6d8; box-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 28px -8px rgba(15, 23, 42, .28), 0 0 0 4px rgba(0, 168, 255, .12); }
+.composer:focus-within { border-color: #9fb0c6; box-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 28px -8px rgba(15, 23, 42, .28), 0 0 0 4px rgba(0, 168, 255, .12); }
 .btn-dark:hover { background: var(--glass-dark-bg); filter: brightness(1.15); }
 /* Pop-up-urile stau peste conținut: sticlă aproape opacă, ca textul să fie clar */
 .modal, .wa-panel { background: linear-gradient(180deg, rgba(255, 255, 255, .97), rgba(255, 255, 255, .92)); }
@@ -763,8 +770,7 @@ body.chatting .composer-actions { margin-left: 0; }
   html { font-size: 17px; }
   .topbar-inner { padding: 0 20px; gap: 16px; }
   .brand img { width: 112px; }
-  .call { width: auto; padding: 0 16px; }
-  .call span { display: inline; }
+  .call { padding: 0 16px; }
   .app { width: calc(100% - 32px); padding-bottom: 12vh; }
   .intro { margin-bottom: 26px; }
   .hero-bot { width: 210px; }
@@ -772,8 +778,9 @@ body.chatting .composer-actions { margin-left: 0; }
   .intro p { font-size: 1.05rem; }
   .msg .avatar { flex-basis: 52px; width: 52px; }
   .msg-user .bubble { max-width: 75%; }
-  .composer { flex-wrap: nowrap; padding: 8px 8px 8px 20px; border-radius: 28px; }
-  .composer textarea { flex: 1 1 auto; }
+  .composer { padding: 8px 8px 8px 20px; border-radius: 28px; gap: 4px; }
+  .composer textarea { min-height: 44px; padding: 11px 0; }
+  .icon-btn { flex-basis: 44px; width: 44px; height: 44px; }
   .composer textarea::placeholder { font-size: 16px; }
   .quick-replies { gap: 8px; }
   .chip { min-height: 42px; padding: 9px 16px; font-size: .88rem; }
