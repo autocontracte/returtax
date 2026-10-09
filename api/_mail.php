@@ -1,15 +1,20 @@
 <?php
 /**
- * Returtax — trimiterea e-mailurilor prin Gmail (SMTP), ca notificările să nu ajungă în spam.
+ * Returtax — trimiterea notificărilor pe e-mail.
  *
- * Datele de conectare stau doar pe server, în /home/returtax/secrets/mail.json:
- *   {"gmail": "adresa@gmail.com", "app_password": "parola de aplicație Google", "to": "contact@returtax.ro"}
+ * Implicit, e-mailurile pleacă direct de pe server (Postfix), de la no-reply@returtax.ro,
+ * semnate DKIM (selectorul 202506, gestionat de Virtualmin) și acoperite de SPF/DMARC în Cloudflare.
+ * Ajung la RT_MAIL_TO.
+ *
+ * Opțional, pot pleca prin Gmail (SMTP), dacă există /home/returtax/secrets/mail.json:
+ *   {"gmail": "adresa@gmail.com", "app_password": "parola de aplicație Google", "to": "..."}
  * Se creează cu:  ssh -t psiholog-vps 'php /home/returtax/bin/configureaza-email.php'
- *
- * Dacă fișierul lipsește sau Gmail nu răspunde, se încearcă mail() de pe server.
  */
 
 require_once __DIR__ . '/_lib.php';
+
+const RT_MAIL_TO = 'returtax.ro@gmail.com';
+const RT_MAIL_FROM = 'no-reply@returtax.ro';
 
 function rt_mail_config(): ?array {
     $cfg = json_decode((string)@file_get_contents(RT_SECRETS . '/mail.json'), true);
@@ -23,11 +28,11 @@ function rt_mail_header(string $text): string {
 
 /**
  * Trimite un e-mail text simplu. Întoarce true dacă a plecat.
- * $to: destinatarul (implicit adresa din configurare sau contact@returtax.ro).
+ * $to: destinatarul (implicit adresa din configurare sau RT_MAIL_TO).
  */
 function rt_send_mail(string $subject, string $body, ?string $replyTo = null, ?string $to = null): bool {
     $cfg = rt_mail_config();
-    $to = $to ?: ($cfg['to'] ?? 'contact@returtax.ro');
+    $to = $to ?: ($cfg['to'] ?? RT_MAIL_TO);
     if ($cfg) {
         try {
             rt_smtp_send($cfg['gmail'], $cfg['app_password'], $to, $subject, $body, $replyTo);
@@ -36,11 +41,19 @@ function rt_send_mail(string $subject, string $body, ?string $replyTo = null, ?s
             error_log('[returtax/mail] Gmail: ' . $e->getMessage());
         }
     }
-    $headers = ['From: Returtax <no-reply@returtax.ro>', 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: 8bit'];
+    $headers = [
+        'From: Returtax <' . RT_MAIL_FROM . '>',
+        'Date: ' . date('r'),
+        'Message-ID: <' . bin2hex(random_bytes(12)) . '@returtax.ro>',
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=UTF-8',
+        'Content-Transfer-Encoding: 8bit',
+    ];
     if ($replyTo) {
         $headers[] = 'Reply-To: ' . $replyTo;
     }
-    return @mail($to, rt_mail_header($subject), $body, implode("\r\n", $headers));
+    // -f: plicul (Return-Path) tot pe returtax.ro, ca SPF și DMARC să se potrivească
+    return @mail($to, rt_mail_header($subject), $body, implode("\r\n", $headers), '-f' . RT_MAIL_FROM);
 }
 
 // Client SMTP minimal pentru smtp.gmail.com:465 (SSL), cu autentificare prin parolă de aplicație

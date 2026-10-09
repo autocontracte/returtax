@@ -36,7 +36,7 @@ $pass = str_replace(' ', '', ask('Parola de aplicație Google (16 litere): ', tr
 if (strlen($pass) < 16) {
     exit("Parola de aplicație are 16 litere.\n");
 }
-$to = ask('Unde să ajungă notificările [contact@returtax.ro]: ') ?: 'contact@returtax.ro';
+$to = ask('Unde să ajungă notificările [' . RT_MAIL_TO . ']: ') ?: RT_MAIL_TO;
 
 echo "Trimit un e-mail de test către $to...\n";
 try {
