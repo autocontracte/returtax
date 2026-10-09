@@ -78,7 +78,7 @@ def head(title, description, url, og_type, ld):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20261009220207">
+  <link rel="stylesheet" href="/css/style.css?v=20261009221023">
   <script type="application/ld+json">
 {json.dumps(ld, ensure_ascii=False, indent=2)}
   </script>
@@ -129,12 +129,13 @@ def footer():
       </nav>
       <p class="footer-contact"><a href="tel:{PHONE_HREF}">{PHONE_TEXT}</a> · <a href="mailto:{EMAIL}">{EMAIL}</a></p>
       <p class="footer-legal"><a href="/termeni/">Termeni și condiții</a> · <a href="/confidentialitate/">Confidențialitate</a></p>
+      <p class="footer-anpc"><a href="https://reclamatiisal.anpc.ro" target="_blank" rel="noopener nofollow"><img src="/assets/anpc-sal.png" width="201" height="50" alt="ANPC – Soluționarea alternativă a litigiilor" loading="lazy"></a></p>
       <p class="footer-company">Returtax este un serviciu oferit de OLARU DRAGOȘ-IULIAN PFA · CUI 52743741 · F2025041319007 · Galați</p>
       <p class="copy"><a href="/admin/" class="copy-link" rel="nofollow">©</a> <span class="year">2026</span> Returtax.ro</p>
     </div>
   </footer>
 
-  <script src="/js/site.js?v=20261009220207"></script>
+  <script src="/js/site.js?v=20261009221023"></script>
 </body>
 </html>
 """

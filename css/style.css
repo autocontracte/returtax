@@ -684,7 +684,10 @@ body.chatting .note { order: 0; }
 .copy { font-size: .78rem; }
 .footer-legal a { color: var(--ink); font-weight: 600; }
 .footer-company { max-width: 40em; font-size: .78rem; line-height: 1.5; }
+.footer-anpc { margin: 4px 0; }
+.footer-anpc img { display: inline-block; vertical-align: middle; height: 50px; width: auto; }
 .consent a, .note a { color: inherit; }
+.consent span { min-width: 0; }
 .legal h2 { font-size: 1.2rem; }
 .copy-link { color: inherit; text-decoration: none; cursor: default; } /* intrarea discretă în panoul de admin */
 
