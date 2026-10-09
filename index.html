@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20261009163914">
+  <link rel="stylesheet" href="/css/style.css?v=20261009165357">
 
   <script type="application/ld+json">
   {
@@ -116,7 +116,12 @@
           {
             "@type": "Question",
             "name": "Pentru ce ani pot cere taxele înapoi?",
-            "acceptedAnswer": { "@type": "Answer", "text": "De regulă se pot verifica și anii trecuți, nu doar ultimul. Spuneți-ne toți anii în care ați lucrat și vă spunem ce se mai poate recupera." }
+            "acceptedAnswer": { "@type": "Answer", "text": "De regulă, ultimii 3 ani: trecerea de la impozitarea fixă de 25% (PAYE) la impozitarea obișnuită se poate cere până la 3 ani după anul respectiv." }
+          },
+          {
+            "@type": "Question",
+            "name": "De ce primesc bani înapoi din Norvegia?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Majoritatea muncitorilor străini sunt impozitați automat cu 25% fix din salariul brut, fără deduceri. Cu impozitarea obișnuită se scad deducerea personală, deducerea minimă de 46% din venit și, pentru navetiști, cazarea și drumurile acasă. Diferența de impozit plătită în plus este returnată de Skatteetaten direct în contul clientului." }
           }
         ]
       }
@@ -134,7 +139,7 @@
       </a>
       <nav class="nav" aria-label="Meniu principal">
         <a href="/#calculator">Calculator</a>
-        <a href="/#cum-functioneaza">Cum funcționează</a>
+        <a href="/#de-ce">De ce primiți bani</a>
         <a href="/#despre">Despre noi</a>
         <a href="/#pret">Preț</a>
         <a href="/#recenzii">Recenzii</a>
@@ -225,9 +230,7 @@
             <select id="calc-years" name="years">
               <option value="1">1 an</option>
               <option value="2" selected>2 ani</option>
-              <option value="3">3 ani</option>
-              <option value="4">4 ani</option>
-              <option value="5">5 ani</option>
+              <option value="3">3 ani (maximul)</option>
             </select>
           </div>
           <fieldset class="field checks">
@@ -244,15 +247,38 @@
           <p class="calc-range"><span id="calc-low">—</span> – <span id="calc-high">—</span></p>
           <dl class="calc-lines">
             <div><dt>Comisionul nostru</dt><dd id="calc-fee">—</dd></div>
-            <div><dt>Rămân la dumneavoastră (aprox.)</dt><dd id="calc-net">—</dd></div>
+            <div><dt>Vă rămân</dt><dd id="calc-net">—</dd></div>
           </dl>
           <button type="button" id="calc-cta" class="btn btn-primary">Vreau verificarea exactă, gratuit</button>
-          <p class="calc-disclaimer">Estimare orientativă, nu o garanție. Suma reală depinde de actele și de situația dumneavoastră.</p>
+          <p class="calc-disclaimer">Estimare orientativă după regulile fiscale norvegiene din 2025, pentru cei impozitați cu 25% fix (schema PAYE). Suma reală depinde de actele și de situația dumneavoastră.</p>
         </div>
       </form>
     </section>
 
-    <section id="cum-functioneaza" class="section" aria-labelledby="steps-title">
+    <section id="de-ce" class="section" aria-labelledby="why-money-title">
+      <p class="kicker">Explicat simplu</p>
+      <h2 id="why-money-title">De ce primiți bani înapoi?</h2>
+      <ol class="why-money">
+        <li>
+          <span class="step-num" aria-hidden="true">01</span>
+          <h3>Banii sunt ai dumneavoastră</h3>
+          <p>În fiecare lună, angajatorul norvegian v-a reținut impozit din salariu și l-a plătit la Skatteetaten, fiscul norvegian. Ce recuperați este partea din acest impozit plătită în plus. Nu e un ajutor și nici o primă.</p>
+        </li>
+        <li>
+          <span class="step-num" aria-hidden="true">02</span>
+          <h3>De ce s-a reținut prea mult</h3>
+          <p>Majoritatea muncitorilor străini sunt impozitați automat cu <strong>25% fix</strong> din salariul brut, fără nicio deducere. Impozitul calculat după regulile obișnuite ține cont de deducerea personală, de deducerea minimă (46% din venit) și, pentru navetiști, de cazare și de drumurile acasă — iar pentru salariile obișnuite iese mult sub 25%.</p>
+        </li>
+        <li>
+          <span class="step-num" aria-hidden="true">03</span>
+          <h3>Cine vă plătește</h3>
+          <p>Skatteetaten reface calculul și vă returnează diferența <strong>direct în contul dumneavoastră</strong>. Trecerea la impozitarea obișnuită se poate cere, de regulă, până la <strong>3 ani</strong> în urmă — acum pentru 2023, 2024 și 2025.</p>
+        </li>
+      </ol>
+      <p class="pricing-note">Dacă ați fost deja impozitat după regulile obișnuite, suma poate fi mai mică. Verificăm gratuit fiecare situație.</p>
+    </section>
+
+    <section id="cum-functioneaza" class="section section-soft" aria-labelledby="steps-title">
       <p class="kicker">Simplu, în 3 pași</p>
       <h2 id="steps-title">Cum funcționează</h2>
       <ol class="steps">
@@ -274,7 +300,7 @@
       </ol>
     </section>
 
-    <section id="despre" class="section section-soft" aria-labelledby="about-title">
+    <section id="despre" class="section" aria-labelledby="about-title">
       <p class="kicker">Despre noi</p>
       <h2 id="about-title">De ce am înființat Returtax</h2>
       <div class="story">
@@ -304,7 +330,7 @@
       </div>
     </section>
 
-    <section id="pret" class="section" aria-labelledby="price-title">
+    <section id="pret" class="section section-soft" aria-labelledby="price-title">
       <p class="kicker">Prețul nostru</p>
       <h2 id="price-title">Fără procente. Fără surprize.</h2>
       <div class="pricing">
@@ -322,7 +348,7 @@
       <p class="pricing-note">În ambele cazuri, banii vin <strong>direct de la Skatteetaten în contul dumneavoastră</strong> — nu trec prin contul nostru.</p>
     </section>
 
-    <section class="section section-soft" aria-labelledby="why-title">
+    <section class="section" aria-labelledby="why-title">
       <p class="kicker">De ce Returtax</p>
       <h2 id="why-title">De ce să lucrați cu noi</h2>
       <ul class="perks">
@@ -347,7 +373,7 @@
 
     <!-- RECENZII: textele de mai jos sunt EXEMPLE de așezare în pagină.
          Înlocuiți-le cu recenzii reale (cu acordul clienților) înainte de lansare. -->
-    <section id="recenzii" class="section" aria-labelledby="reviews-title">
+    <section id="recenzii" class="section section-soft" aria-labelledby="reviews-title">
       <p class="kicker">Recenzii</p>
       <h2 id="reviews-title">Ce spun clienții</h2>
       <ul class="reviews">
@@ -369,7 +395,7 @@
       </ul>
     </section>
 
-    <section id="intrebari" class="section section-soft" aria-labelledby="faq-title">
+    <section id="intrebari" class="section" aria-labelledby="faq-title">
       <p class="kicker">Informații utile</p>
       <h2 id="faq-title">Întrebări frecvente</h2>
       <div class="faq">
@@ -395,12 +421,12 @@
         </details>
         <details>
           <summary>Pentru ce ani pot cere?</summary>
-          <p>De regulă se pot verifica și anii trecuți, nu doar ultimul. Spuneți-ne toți anii în care ați lucrat și vă spunem ce se mai poate recupera.</p>
+          <p>De regulă, ultimii 3 ani: trecerea la impozitarea obișnuită se poate cere până la 3 ani după anul respectiv. Acum se pot verifica 2023, 2024 și 2025.</p>
         </details>
       </div>
     </section>
 
-    <section id="blog" class="section" aria-labelledby="blog-title">
+    <section id="blog" class="section section-soft" aria-labelledby="blog-title">
       <p class="kicker">Blog</p>
       <h2 id="blog-title">Ghiduri și noutăți</h2>
       <ul class="posts">
@@ -429,7 +455,7 @@
       <p class="center"><a class="btn btn-outline" href="/blog/">Toate articolele</a></p>
     </section>
 
-    <section id="contact" class="section section-soft" aria-labelledby="contact-title">
+    <section id="contact" class="section" aria-labelledby="contact-title">
       <p class="kicker">Contact</p>
       <h2 id="contact-title">Luați legătura cu noi</h2>
       <div class="contact">
@@ -548,7 +574,7 @@
     </svg>
   </template>
 
-  <script src="/js/site.js?v=20261009163914"></script>
-  <script src="/js/chat.js?v=20261009163914"></script>
+  <script src="/js/site.js?v=20261009165357"></script>
+  <script src="/js/chat.js?v=20261009165357"></script>
 </body>
 </html>

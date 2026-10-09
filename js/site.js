@@ -56,22 +56,47 @@
   const eur = (n) => new Intl.NumberFormat("ro-RO", { maximumFractionDigits: 0 }).format(n) + " €";
 
   /* ---------- Calculator ----------
-   * Estimare orientativă. Pornim de la venitul anual și adăugăm câte un procent
-   * pentru fiecare situație care, de obicei, aduce deduceri (cazare, drumuri, familie, credit).
-   * Valorile se pot ajusta aici, pe măsură ce aveți date din dosarele reale. */
-  const CALC = {
-    nokPerEur: 11.7,      // curs aproximativ NOK / EUR
-    base: 0.02,           // oricine a lucrat acolo
-    housing: 0.05,        // și-a plătit singur cazarea
-    travel: 0.025,        // drumuri acasă pe banii lui
-    family: 0.02,         // familie în România
-    loan: 0.015,          // credit în România
-    partYear: 0.02,       // a lucrat cel mult 6 luni pe an
-    maxRate: 0.14,
-    low: 0.6, high: 1.3,  // intervalul afișat în jurul estimării
-    freeUnder: 1000,      // sub această sumă nu plătește nimic
-    fee: 100,             // peste, taxă fixă
+   * Estimare după regulile fiscale norvegiene din 2025 (aceeași logică ca rt_estimate din api/_lib.php):
+   * cât s-a reținut prin schema PAYE (25% fix, fără deduceri) minus cât trebuia plătit
+   * cu impozitarea obișnuită (trygdeavgift, trinnskatt, 22% după deduceri).
+   * Valorile marcate „ipoteză” se pot ajusta pe măsură ce aveți date din dosarele reale. */
+  const TAX = {
+    nokPerEur: 11.7,
+    payeRate: 0.25, payeMax: 697150,
+    trygdRate: 0.077, trygdMin: 99650,
+    trinn: [[217401, 0.017], [306051, 0.04], [697151, 0.137], [942401, 0.167], [1410751, 0.177]],
+    ordinaryRate: 0.22,
+    minsteRate: 0.46, minsteMax: 92000,
+    personfradrag: 108550,
+    lodgingMonth: 4500,   // ipoteză: cost lunar de cazare plătit singur
+    trips: 4,             // ipoteză: drumuri dus-întors acasă pe an
+    kmOneWay: 2400,       // ipoteză: distanța medie România – Norvegia
+    kmRate: 1.83, travelFloor: 15250, travelMax: 100880,
+    loanInterest: 15000,  // ipoteză: dobânzi anuale la un credit
+    spread: 0.10,         // intervalul afișat: ±10%
+    freeUnder: 1000, fee: 100,
   };
+
+  function taxOrdinary(g, deductions) {
+    const trygd = g > TAX.trygdMin ? Math.min(TAX.trygdRate * g, 0.25 * (g - TAX.trygdMin)) : 0;
+    let trinn = 0;
+    TAX.trinn.forEach(([from, rate], i) => {
+      const to = i + 1 < TAX.trinn.length ? TAX.trinn[i + 1][0] : Infinity;
+      if (g > from) trinn += (Math.min(g, to) - from) * rate;
+    });
+    return trygd + trinn + TAX.ordinaryRate * Math.max(0, g - deductions);
+  }
+
+  function refundYear(g, months, housing, travel, family, loan) {
+    const basic = Math.min(TAX.minsteRate * g, TAX.minsteMax) + (TAX.personfradrag * months) / 12;
+    let extra = 0;
+    if (housing && (family || travel)) extra += TAX.lodgingMonth * months;
+    if (travel) extra += Math.max(0, Math.min(TAX.trips * 2 * TAX.kmOneWay * TAX.kmRate, TAX.travelMax) - TAX.travelFloor);
+    if (loan) extra += TAX.loanInterest;
+    const actual = taxOrdinary(g, basic + extra);
+    const withheld = g <= TAX.payeMax ? TAX.payeRate * g : taxOrdinary(g, basic);
+    return Math.max(0, withheld - actual);
+  }
 
   const calc = document.getElementById("calc-form");
   if (calc) {
@@ -88,24 +113,22 @@
       lastYears = years;
       monthsOut.textContent = m + (m === 1 ? " lună" : " luni");
 
-      const monthlyEur = currency === "NOK" ? salary / CALC.nokPerEur : salary;
-      let rate = CALC.base;
-      if (calc.housing.checked) rate += CALC.housing;
-      if (calc.travel.checked) rate += CALC.travel;
-      if (calc.family.checked) rate += CALC.family;
-      if (calc.loan.checked) rate += CALC.loan;
-      if (m <= 6) rate += CALC.partYear;
-      rate = Math.min(rate, CALC.maxRate);
+      const monthlyNok = currency === "NOK" ? salary : salary * TAX.nokPerEur;
+      const perYear = refundYear(monthlyNok * m, m, calc.housing.checked, calc.travel.checked, calc.family.checked, calc.loan.checked);
+      const total = (perYear * years) / TAX.nokPerEur;
 
-      const mid = monthlyEur * m * rate * years;
-      const low = mid * CALC.low;
-      const high = mid * CALC.high;
-      const fee = mid >= CALC.freeUnder ? CALC.fee : 0;
+      const low = Math.round((total * (1 - TAX.spread)) / 10) * 10;
+      const high = Math.round((total * (1 + TAX.spread)) / 10) * 10;
+      // Comisionul depinde de suma recuperată: 0 € sub 1.000 €, 100 € fix peste
+      const feeLow = low >= TAX.freeUnder ? TAX.fee : 0;
+      const feeHigh = high >= TAX.freeUnder ? TAX.fee : 0;
 
-      $("calc-low").textContent = eur(Math.round(low / 10) * 10);
-      $("calc-high").textContent = eur(Math.round(high / 10) * 10);
-      $("calc-fee").textContent = fee ? eur(fee) + " fix" : "0 € (gratuit)";
-      $("calc-net").textContent = eur(Math.max(0, Math.round((mid - fee) / 10) * 10));
+      $("calc-low").textContent = eur(low);
+      $("calc-high").textContent = eur(high);
+      $("calc-fee").textContent = feeLow === feeHigh
+        ? (feeHigh ? eur(feeHigh) + " fix" : "0 € (gratuit)")
+        : "0 € sau 100 €";
+      $("calc-net").textContent = eur(low - feeLow) + " – " + eur(high - feeHigh);
     }
 
     calc.addEventListener("input", compute);

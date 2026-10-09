@@ -371,8 +371,16 @@
 
     if (expecting === "vrea_apel") {
       expecting = null;
-      if (has(t, ["da", "sa ma sune", "sunati", "ok", "bine", "sigur"])) return askName();
+      if (has(t, ["da", "sa ma sune", "sunati", "ok", "bine", "sigur"])) return askCallTime();
       return botSay("Sigur, întrebați-mă orice. Scrieți-mi sau folosiți microfonul.", CHIPS_MAIN);
+    }
+
+    if (expecting === "cand") {
+      lead.cand = text;
+      expecting = "nume";
+      botSay("Cum vă numiți?");
+      setTimeout(() => input.focus(), 600);
+      return;
     }
 
     if (expecting === "nume") {
@@ -389,12 +397,6 @@
         return botSay("Nu am înțeles bine numărul. Vă rog scrieți-l doar cu cifre, de exemplu: <strong>0722 123 456</strong>.");
       }
       lead.telefon = p;
-      expecting = "cand";
-      return botSay("Când vă este cel mai bine să vă sunăm?", ["Dimineața", "După-amiaza", "Seara", "Oricând"]);
-    }
-
-    if (expecting === "cand") {
-      lead.cand = text;
       expecting = null;
       saveLead();
       return botSay(
@@ -455,7 +457,7 @@
           ["Am lucrat în Norvegia", "Vreau să mă sune cineva"]
         );
       case "call":
-        return askName();
+        return askCallTime();
       case "safety":
         return botSay(
           [
@@ -480,10 +482,10 @@
     }
   }
 
-  function askName() {
-    expecting = "nume";
-    botSay("Cu plăcere vă sunăm. Cum vă numiți?");
-    setTimeout(() => input.focus(), 600);
+  // Programarea apelului începe cu ziua și ora
+  function askCallTime() {
+    expecting = "cand";
+    botSay("Cam în ce zi și pe la ce oră vă putem suna?", ["Cât mai repede", "Azi după-amiază", "Mâine dimineață", "Mâine după-amiază"]);
   }
 
   function yearChips() {

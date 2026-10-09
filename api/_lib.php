@@ -138,30 +138,103 @@ function rt_cost(array $u, string $model): float {
 }
 
 /**
- * Estimarea sumei recuperabile — aceeași formulă ca în calculatorul de pe site (js/site.js, CALC).
- * Dacă schimbați coeficienții, schimbați-i în ambele locuri.
+ * Estimarea sumei recuperabile, după regulile fiscale norvegiene pentru anul 2025.
+ *
+ * Cum se face calculul (aceeași logică ca în calculatorul de pe site, js/site.js → TAX):
+ *  1. Cât s-a reținut: majoritatea muncitorilor străini sunt în schema PAYE (kildeskatt),
+ *     cu 25% fix din salariul brut, fără deduceri (pentru venituri anuale sub 697.150 NOK).
+ *  2. Cât trebuia plătit cu impozitarea obișnuită (pe care o pot cere, până la 3 ani în urmă):
+ *     contribuția socială (trygdeavgift) 7,7% + impozitul în trepte (trinnskatt)
+ *     + 22% din venitul rămas după deduceri:
+ *       - deducerea minimă (minstefradrag): 46% din venit, cel mult 92.000 NOK;
+ *       - deducerea personală (personfradrag): 108.550 NOK, proporțional cu lunile lucrate;
+ *       - cazare plătită singur (navetist): ~4.500 NOK pe lună lucrată;
+ *       - drumuri acasă: 4 drumuri dus-întors pe an × ~2.400 km × 1,83 NOK/km, minus pragul de 15.250 NOK;
+ *       - dobânzi la un credit: ~15.000 NOK pe an.
+ *  3. Diferența, înmulțită cu numărul de ani, este estimarea (afișată ca interval de ±10%).
+ *
+ * Valorile marcate „ipoteză” sunt aproximări; ajustați-le pe măsură ce aveți date din dosarele reale.
+ * Surse: Skatteetaten (PAYE, forskuddsmeldingen 2025, Skatte-ABC: pendler, personfradrag).
  */
+const TAX_2025 = [
+    'nok_per_eur'   => 11.7,     // curs aproximativ
+    'paye_rate'     => 0.25,     // schema PAYE 2025
+    'paye_max'      => 697150,   // peste acest venit anual nu se aplică PAYE
+    'trygd_rate'    => 0.077,    // trygdeavgift pe salariu
+    'trygd_min'     => 99650,    // sub acest venit nu se plătește
+    'trinn'         => [[217401, 0.017], [306051, 0.04], [697151, 0.137], [942401, 0.167], [1410751, 0.177]],
+    'ordinary_rate' => 0.22,     // impozit pe venitul ordinar
+    'minste_rate'   => 0.46,
+    'minste_max'    => 92000,
+    'personfradrag' => 108550,
+    'lodging_month' => 4500,     // ipoteză: cost lunar de cazare plătit singur
+    'trips'         => 4,        // ipoteză: drumuri dus-întors acasă pe an (minimul cerut pentru navetiști din SEE)
+    'km_one_way'    => 2400,     // ipoteză: distanța medie România – Norvegia
+    'km_rate'       => 1.83,
+    'travel_floor'  => 15250,
+    'travel_max'    => 100880,
+    'loan_interest' => 15000,    // ipoteză: dobânzi anuale la un credit
+    'spread'        => 0.10,     // intervalul afișat: ±10%
+];
+
+// Impozitul cu regulile obișnuite, după deducerile date
+function rt_tax_ordinary(float $g, float $deductions): float {
+    $t = TAX_2025;
+    $trygd = $g > $t['trygd_min'] ? min($t['trygd_rate'] * $g, 0.25 * ($g - $t['trygd_min'])) : 0;
+    $trinn = 0.0;
+    $steps = $t['trinn'];
+    foreach ($steps as $i => [$from, $rate]) {
+        $to = $steps[$i + 1][0] ?? INF;
+        if ($g > $from) {
+            $trinn += (min($g, $to) - $from) * $rate;
+        }
+    }
+    return $trygd + $trinn + $t['ordinary_rate'] * max(0, $g - $deductions);
+}
+
+// Cât primește înapoi pe un an (NOK), pentru un venit anual brut $g câștigat în $months luni
+function rt_refund_year(float $g, int $months, bool $housing, bool $travel, bool $family, bool $loan): float {
+    $t = TAX_2025;
+    $basic = min($t['minste_rate'] * $g, $t['minste_max']) + $t['personfradrag'] * $months / 12;
+    $extra = 0.0;
+    $commuter = $family || $travel;              // navetist: familia acasă sau drumuri regulate acasă
+    if ($housing && $commuter) {
+        $extra += $t['lodging_month'] * $months;
+    }
+    if ($travel) {
+        $extra += max(0, min($t['trips'] * 2 * $t['km_one_way'] * $t['km_rate'], $t['travel_max']) - $t['travel_floor']);
+    }
+    if ($loan) {
+        $extra += $t['loan_interest'];
+    }
+    $actual = rt_tax_ordinary($g, $basic + $extra);
+    // Ce s-a reținut: 25% fix (PAYE); peste plafon, reținerea obișnuită fără deducerile de navetist
+    $withheld = $g <= $t['paye_max'] ? $t['paye_rate'] * $g : rt_tax_ordinary($g, $basic);
+    return max(0, $withheld - $actual);
+}
+
 function rt_estimate(float $salary, string $currency, int $months, int $years,
                      bool $housing, bool $travel, bool $family, bool $loan): array {
-    $nokPerEur = 11.7;
+    $t = TAX_2025;
     $months = max(1, min(12, $months));
-    $years  = max(1, min(5, $years));
-    $monthlyEur = $currency === 'NOK' ? $salary / $nokPerEur : $salary;
-    $rate = 0.02
-          + ($housing ? 0.05 : 0)
-          + ($travel ? 0.025 : 0)
-          + ($family ? 0.02 : 0)
-          + ($loan ? 0.015 : 0)
-          + ($months <= 6 ? 0.02 : 0);
-    $rate = min($rate, 0.14);
-    $mid  = max(0, $monthlyEur * $months * $rate * $years);
-    $fee  = $mid >= 1000 ? 100 : 0;
+    $years  = max(1, min(3, $years));            // se pot cere de regulă ultimii 3 ani
+    $monthlyNok = $currency === 'NOK' ? $salary : $salary * $t['nok_per_eur'];
+    $perYear = rt_refund_year($monthlyNok * $months, $months, $housing, $travel, $family, $loan);
+    $totalEur = $perYear * $years / $t['nok_per_eur'];
+
     $round = fn($n) => (int)(round($n / 10) * 10);
+    $low  = $round($totalEur * (1 - $t['spread']));
+    $high = $round($totalEur * (1 + $t['spread']));
+    // Comisionul depinde de suma recuperată: 0 € sub 1.000 €, 100 € fix peste
+    $feeLow  = $low >= 1000 ? 100 : 0;
+    $feeHigh = $high >= 1000 ? 100 : 0;
     return [
-        'estimare_minima_eur' => $round($mid * 0.6),
-        'estimare_maxima_eur' => $round($mid * 1.3),
-        'comision_eur'        => $fee,
-        'ramane_clientului_aprox_eur' => $round(max(0, $mid - $fee)),
-        'nota' => 'Estimare orientativă, nu o garanție. Suma exactă se află după verificarea gratuită.',
+        'estimare_minima_eur' => $low,
+        'estimare_maxima_eur' => $high,
+        'comision_eur'        => $feeLow === $feeHigh ? $feeHigh : '0 sau 100 (100 doar dacă suma depășește 1.000 €)',
+        'ramane_minim_eur'    => $low - $feeLow,
+        'ramane_maxim_eur'    => $high - $feeHigh,
+        'pe_an_nok'           => (int)round($perYear),
+        'nota' => 'Estimare orientativă după regulile din 2025, presupunând impozitare PAYE de 25%. Suma exactă se află după verificarea gratuită.',
     ];
 }

@@ -308,7 +308,8 @@ elseif ($view === 'conversatie'):
         <div class="m <?= e($row['role']) ?>"><?= e($row['content']) ?>
           <?php if ($row['meta']): $est = json_decode($row['meta'], true); if ($est): ?>
             <div class="est">Estimare calculată: <strong><?= e($est['estimare_minima_eur'] ?? '?') ?> – <?= e($est['estimare_maxima_eur'] ?? '?') ?> €</strong>,
-              comision <?= e($est['comision_eur'] ?? '?') ?> €
+              comision <?= e($est['comision_eur'] ?? '?') ?> €<?php if (isset($est['ramane_minim_eur'])): ?>,
+              rămân <?= e($est['ramane_minim_eur']) ?> – <?= e($est['ramane_maxim_eur']) ?> €<?php endif; ?>
               <?php if (!empty($est['date_folosite'])): $d = $est['date_folosite']; ?>
                 <br><span class="muted">din: <?= e($d['castig_lunar'] ?? '?') ?> <?= e($d['moneda'] ?? '') ?>/lună, <?= e($d['luni_pe_an'] ?? '?') ?> luni/an, <?= e($d['ani'] ?? '?') ?> ani<?=
                   !empty($d['cazare_platita']) ? ', cazare' : '' ?><?= !empty($d['drumuri_acasa']) ? ', drumuri' : '' ?><?=

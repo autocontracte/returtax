@@ -13,6 +13,14 @@
 - Ce trebuie să aibă clientul: D-nummer (numărul norvegian de identificare) și MinID (autentificarea pentru serviciile publice norvegiene). Returtax ajută și pe cei care nu le mai au.
 - Contact: telefon 0752 176 807, e-mail contact@returtax.ro, chat cu asistentul Marcel pe returtax.ro.
 
+## De unde sunt banii și de ce se primesc
+
+- Angajatorul norvegian reține lunar impozit din salariu și îl plătește la Skatteetaten. Banii recuperați sunt impozitul plătit în plus — banii clientului, nu un ajutor.
+- Majoritatea muncitorilor străini sunt impozitați automat cu 25% fix din salariul brut (schema PAYE / kildeskatt), fără deduceri (pentru venituri anuale sub 697.150 NOK în 2025).
+- Cu impozitarea obișnuită, care se poate cere de regulă până la 3 ani după anul respectiv, se scad: deducerea personală (108.550 NOK în 2025, proporțional cu lunile lucrate), deducerea minimă (46% din venit, max. 92.000 NOK) și, pentru navetiști, cazarea și drumurile acasă (1,83 NOK/km după un prag de 15.250 NOK). Pentru salariile obișnuite impozitul real e mult sub 25%.
+- Diferența este returnată de Skatteetaten direct în contul clientului.
+- Calculatorul de pe returtax.ro estimează suma după aceste reguli (2025), ca interval de ±10%.
+
 ## De ce există Returtax
 
 Returtax s-a născut dintr-o experiență din familia fondatorului: un dosar de recuperare a impozitului, lăsat la un intermediar, nu înregistrase niciun progres după cinci luni. Preluat de fondator, dosarul a fost finalizat în două săptămâni, cu suma virată de Skatteetaten direct în contul titularului. Unii intermediari își înregistrează propriul IBAN în profilul de MinID al clientului și primesc rambursarea în locul acestuia; Returtax lucrează exclusiv cu plata directă de la Skatteetaten către client.
