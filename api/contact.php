@@ -2,13 +2,10 @@
 /**
  * Returtax — primește cererile din formularul de contact, din pop-up-ul calculatorului
  * și din chat (Marcel). Le salvează în baza de date (panoul de admin), păstrează o copie CSV
- * în afara folderului public și trimite o notificare pe e-mail.
+ * în afara folderului public și trimite o notificare pe e-mail (prin Gmail, vezi api/_mail.php).
  */
 
-require __DIR__ . '/_lib.php';
-
-const TO_EMAIL   = 'contact@returtax.ro';
-const FROM_EMAIL = 'no-reply@returtax.ro';
+require __DIR__ . '/_mail.php';
 
 // Elimină caracterele de control (inclusiv rândurile noi, ca să nu poată fi injectate antete de e-mail)
 function clean(string $key, int $max, bool $multiline = false): string {
@@ -68,7 +65,7 @@ if ((is_dir($dir) || @mkdir($dir, 0750, true)) && ($fh = @fopen($dir . '/leads.c
 }
 
 // 3) Notificare pe e-mail
-$subject = '=?UTF-8?B?' . base64_encode("Cerere nouă Returtax ($source): $name") . '?=';
+$subject = "Cerere nouă Returtax ($source): $name";
 $body = "Cerere nouă de pe returtax.ro\n\n"
       . "Sursa:   $source\n"
       . "Nume:    $name\n"
@@ -78,15 +75,7 @@ $body = "Cerere nouă de pe returtax.ro\n\n"
       . "Mesaj:\n" . ($message ?: '-') . "\n\n"
       . "Toate cererile: https://returtax.ro/admin/\n";
 
-$headers = [
-    'From: Returtax <' . FROM_EMAIL . '>',
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: 8bit',
-];
-if ($email !== '') {
-    $headers[] = 'Reply-To: ' . $email;
-}
-$sent = @mail(TO_EMAIL, $subject, $body, implode("\r\n", $headers));
+$sent = rt_send_mail($subject, $body, $email !== '' ? $email : null);
 
 // E suficient ca cererea să fi ajuns măcar pe un drum
 rt_json($sent || $saved ? 200 : 500, ['ok' => $sent || $saved]);
