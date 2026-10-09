@@ -83,11 +83,14 @@ a { color: var(--blue-deep); }
    ========================================================= */
 .topbar {
   position: sticky; top: 0; z-index: 30;
-  background: rgba(255, 255, 255, .92);
-  -webkit-backdrop-filter: saturate(180%) blur(10px);
-  backdrop-filter: saturate(180%) blur(10px);
   border-bottom: 1px solid transparent;
   transition: border-color .2s;
+}
+.topbar::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: rgba(255, 255, 255, .85);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
 }
 .topbar.scrolled { border-bottom-color: var(--line); }
 .topbar-inner {
@@ -129,8 +132,11 @@ a { color: var(--blue-deep); }
   display: flex; flex-direction: column;
   padding: 8px 16px 20px;
   max-height: calc(100dvh - var(--header-h)); overflow-y: auto;
-  background: #fff; border-bottom: 1px solid var(--line);
-  box-shadow: 0 20px 40px -20px rgba(15, 23, 42, .25);
+  background: rgba(255, 255, 255, .78);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, .9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 24px 48px -16px rgba(15, 23, 42, .3);
   animation: drop .2s ease-out;
 }
 .mobile-menu[hidden] { display: none; }
@@ -202,6 +208,9 @@ a { color: var(--blue-deep); }
   font-size: .78rem; font-weight: 600; color: var(--muted); text-decoration: none; z-index: 2;
 }
 .scroll-hint svg { animation: nudge 1.8s ease-in-out infinite; }
+/* Cât timp omul scrie (tastatura deschisă) sau pe ecrane joase, indicatorul se ascunde */
+.app:focus-within + .scroll-hint { display: none; }
+@media (max-height: 640px) { .scroll-hint { display: none; } }
 
 /* ---------- Starea „conversație” ---------- */
 body.chatting .app { justify-content: flex-start; padding-bottom: 0; }
@@ -210,34 +219,42 @@ body.chatting .scroll-hint { display: none; }
 body.chatting .chat-log { display: flex; }
 body.chatting .quick-replies { order: 0; justify-content: flex-start; margin-top: 0; padding-bottom: 10px; }
 body.chatting .note { order: 0; }
+/* În timpul conversației ecranul e doar chat-ul (ca o aplicație); meniul le arată la cerere */
+body.chatting:not(.browsing) .info,
+body.chatting:not(.browsing) .site-footer { display: none; }
+body.chatting .composer { flex-wrap: nowrap; padding: 6px 6px 6px 16px; }
+body.chatting .composer textarea { flex: 1 1 auto; }
+body.chatting .composer-actions { margin-left: 0; }
+@media (max-width: 639px) { body.chatting .note { display: none; } body.chatting .composer { margin-bottom: max(10px, env(safe-area-inset-bottom)); } }
 
 .chat-log {
   flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
-  list-style: none; margin: 0; padding: 12px 2px 18px;
-  flex-direction: column; gap: 16px;
+  list-style: none; margin: 0; padding: 16px 2px 24px;
+  flex-direction: column; gap: 22px;
   scrollbar-width: thin;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 20px), transparent 100%);
 }
 
 .msg { display: flex; gap: 8px; animation: rise .25s ease-out; }
-.msg-bot { align-items: flex-end; }
+.msg-bot { align-items: flex-start; }
 .msg-user { justify-content: flex-end; }
-.msg-bot + .msg-bot { margin-top: -8px; }
-/* Marcel apare doar lângă ultimul mesaj dintr-un grup */
-.msg-bot:has(+ .msg-bot) .avatar { visibility: hidden; }
+.msg-bot + .msg-bot { margin-top: -12px; }
+/* Marcel apare o singură dată, la începutul fiecărui răspuns */
+.msg-bot + .msg-bot .avatar { visibility: hidden; }
 
 .bubble { font-size: 1rem; line-height: 1.6; min-width: 0; }
 .bubble p { margin: 0 0 .5em; }
 .bubble p:last-child { margin: 0; }
 .bubble ul { margin: .3em 0 .4em; padding-left: 1.2em; }
-.msg-bot .bubble {
-  padding: 10px 16px; background: var(--sky); border-radius: 20px; border-bottom-left-radius: 6px;
-}
+/* Ca în ChatGPT: răspunsurile ca text simplu, mesajele omului în bulă gri, în dreapta */
+.msg-bot .bubble { padding: 4px 0 0; flex: 1; }
 .msg-user .bubble {
   max-width: 85%; padding: 10px 16px;
-  background: var(--ink); color: #fff; border-radius: 20px; border-bottom-right-radius: 6px;
+  background: #eef1f5; color: var(--ink); border-radius: 22px;
 }
 
-.typing .bubble { display: flex; gap: 5px; padding: 16px 18px; }
+.typing .bubble { display: flex; gap: 5px; padding: 14px 0; flex: 0; }
 .typing i { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; animation: dots 1.2s infinite; }
 .typing i:nth-child(2) { animation-delay: .15s; }
 .typing i:nth-child(3) { animation-delay: .3s; }
@@ -265,6 +282,29 @@ body.chatting .note { order: 0; }
 @keyframes dots { 0%, 80%, 100% { opacity: .3; } 40% { opacity: 1; } }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes drop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Formularul Da / Nu din chat ---------- */
+.msg-form { display: block; animation: rise .25s ease-out; }
+.yesno {
+  display: grid; gap: 4px; max-width: 520px; padding: 10px 14px 14px;
+  border-radius: 20px; border-top-left-radius: 6px;
+}
+.yesno-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid var(--line);
+}
+.yesno-q { font-size: .95rem; line-height: 1.4; }
+.yesno-btns { display: flex; gap: 6px; flex: 0 0 auto; }
+.yesno-btns button {
+  min-width: 56px; min-height: 44px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+  font: 600 .95rem/1 var(--body); color: var(--ink);
+  background: #fff; border: 1px solid #cfd6e0;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.yesno-btns button:hover { border-color: var(--ink); }
+.yesno-btns button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.yesno-send { margin-top: 10px; min-height: 48px; }
+.yesno-send:disabled { opacity: .35; cursor: default; filter: none; }
 
 /* ---------- Sugestii ---------- */
 .quick-replies { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -408,7 +448,21 @@ body.chatting .note { order: 0; }
 .input-group { display: flex; gap: 8px; }
 .input-group input { flex: 1; min-width: 0; }
 .input-group select { flex: 0 0 96px; width: 96px; }
-.field input[type="range"] { width: 100%; accent-color: var(--blue-deep); height: 28px; }
+.field input[type="range"] {
+  width: 100%; height: 44px; margin: 0; background: transparent; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  touch-action: none; /* tragerea pe bară nu mai derulează pagina */
+}
+.field input[type="range"]::-webkit-slider-runnable-track { height: 8px; border-radius: 999px; background: #dfe5ee; }
+.field input[type="range"]::-moz-range-track { height: 8px; border-radius: 999px; background: #dfe5ee; }
+.field input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 30px; height: 30px; margin-top: -11px; border-radius: 50%;
+  background: var(--blue-deep); border: 4px solid #fff; box-shadow: 0 2px 8px rgba(15, 23, 42, .3);
+}
+.field input[type="range"]::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--blue-deep); border: 4px solid #fff; box-shadow: 0 2px 8px rgba(15, 23, 42, .3);
+}
 .field output { font-weight: 700; color: var(--blue-deep); margin-left: 6px; }
 .checks label { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; font-size: .95rem; cursor: pointer; }
 .checks input { width: 22px; height: 22px; flex: 0 0 22px; margin: 1px 0 0; accent-color: var(--blue-deep); }
@@ -676,7 +730,7 @@ body.chatting .note { order: 0; }
 /* =========================================================
    LIQUID GLASS — aplicat uniform pe carduri, butoane și casete
    ========================================================= */
-.glass, .mobile-menu, .call, .chip, .composer, .msg-bot .bubble,
+.glass, .call, .chip, .composer, .yesno,
 .steps li, .compare-card, .price-card, .calc-fields, .perks li, .review,
 .post-card a, .contact-form, .modal, .modal-close, .tldr, .callout, .btn-outline {
   background: var(--glass-bg);
@@ -685,14 +739,18 @@ body.chatting .note { order: 0; }
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
 }
-.compare-card-good, .price-card-dark, .calc-result, .msg-user .bubble, .icon-btn.send, .btn-dark {
+.compare-card-good, .price-card-dark, .calc-result, .icon-btn.send, .btn-dark {
   background: var(--glass-dark-bg);
   border: 1px solid rgba(255, 255, 255, .06);
   box-shadow: var(--glass-dark-shadow);
 }
 .chip:hover, .call:hover, .modal-close:hover, .btn-outline:hover { background: rgba(255, 255, 255, .95); }
 .post-card a:hover { border-color: var(--glass-edge); box-shadow: var(--glass-shadow), 0 18px 40px -16px rgba(15, 23, 42, .25); }
-.composer:focus-within { border-color: var(--glass-edge); box-shadow: var(--glass-shadow), 0 0 0 4px rgba(0, 168, 255, .12); }
+.composer {
+  background: #fff; border-color: #d3dae4;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 28px -8px rgba(15, 23, 42, .28);
+}
+.composer:focus-within { border-color: #b8c6d8; box-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 28px -8px rgba(15, 23, 42, .28), 0 0 0 4px rgba(0, 168, 255, .12); }
 .btn-dark:hover { background: var(--glass-dark-bg); filter: brightness(1.15); }
 /* Pop-up-urile stau peste conținut: sticlă aproape opacă, ca textul să fie clar */
 .modal, .wa-panel { background: linear-gradient(180deg, rgba(255, 255, 255, .97), rgba(255, 255, 255, .92)); }

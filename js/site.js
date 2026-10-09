@@ -31,6 +31,9 @@
     menuBtn.setAttribute("aria-label", open ? "Închide meniul" : "Deschide meniul");
     menu.hidden = !open;
   }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest('a[href^="/#"], a[href^="#"]')) document.body.classList.add("browsing");
+  });
   if (menuBtn && menu) {
     menuBtn.addEventListener("click", () => setMenu(menu.hidden));
     menu.addEventListener("click", (e) => { if (e.target.closest("a")) setMenu(false); });

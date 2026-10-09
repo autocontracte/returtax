@@ -33,7 +33,7 @@
   function saveChat() {
     if (restoring) return;
     try {
-      sessionStorage.setItem(SAVE_KEY, JSON.stringify({ transcript: transcript.slice(-60), expecting, lead }));
+      sessionStorage.setItem(SAVE_KEY, JSON.stringify({ transcript: transcript.slice(-60), expecting, lead, yesno: yesNoPending }));
     } catch (e) {}
   }
 
@@ -53,7 +53,10 @@
   }
 
   /* ---------- Afișarea mesajelor ---------- */
-  function scrollDown() { log.scrollTop = log.scrollHeight; }
+  // Derulare automată până la ultimul mesaj (după ce browserul a așezat conținutul nou)
+  function scrollDown() {
+    requestAnimationFrame(() => log.scrollTo({ top: log.scrollHeight, behavior: reduceMotion || restoring ? "auto" : "smooth" }));
+  }
 
   // logSource: „buton” / „script” = salvăm aici; null = mesajul merge la AI și îl salvează serverul
   function addUser(text, logSource) {
@@ -218,7 +221,9 @@
       if (!res.ok || !data.ok || !data.reply) throw new Error(data.error || res.status);
       typing.remove();
       addBot(formatReply(data.reply), true);
-      if (data.action === "call") {
+      if (data.action === "yesno") {
+        showYesNo();
+      } else if (data.action === "call") {
         expecting = "vrea_apel";
         setChips(["Da, să mă sune", "Mai am o întrebare"]);
       } else {
@@ -235,6 +240,59 @@
       clearTimeout(timer);
       aiBusy = false;
     }
+  }
+
+  /* ---------- Formularul Da / Nu (pentru estimare) ---------- */
+  const YES_NO = [
+    ["cazare", "Mi-am plătit singur cazarea în Norvegia"],
+    ["drumuri", "Am venit acasă, în România, pe banii mei"],
+    ["familie", "Am familia (soț/soție, copii) în România"],
+    ["credit", "Am un credit la o bancă din România"],
+  ];
+  let yesNoPending = false;
+
+  function showYesNo() {
+    yesNoPending = true;
+    saveChat();
+    setChips([]);
+    const li = document.createElement("li");
+    li.className = "msg msg-form";
+    const form = document.createElement("form");
+    form.className = "yesno";
+    const answers = {};
+    YES_NO.forEach(([key, label], i) => {
+      const row = document.createElement("div");
+      row.className = "yesno-row";
+      row.setAttribute("role", "group");
+      row.setAttribute("aria-labelledby", "yn-" + i);
+      row.innerHTML = '<span class="yesno-q" id="yn-' + i + '">' + escapeHtml(label) + "</span>" +
+        '<span class="yesno-btns"><button type="button" data-v="da" aria-pressed="false">Da</button>' +
+        '<button type="button" data-v="nu" aria-pressed="false">Nu</button></span>';
+      row.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        answers[key] = btn.dataset.v;
+        row.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+        send.disabled = Object.keys(answers).length < YES_NO.length;
+      });
+      form.appendChild(row);
+    });
+    const send = document.createElement("button");
+    send.type = "submit";
+    send.className = "btn btn-dark yesno-send";
+    send.textContent = "Trimite răspunsurile";
+    send.disabled = true;
+    form.appendChild(send);
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (Object.keys(answers).length < YES_NO.length) return;
+      yesNoPending = false;
+      li.remove();
+      handle(YES_NO.map(([key, label]) => label + ": " + answers[key]).join(". ") + ".", true);
+    });
+    li.appendChild(form);
+    log.appendChild(li);
+    scrollDown();
   }
 
   // Textul de la AI: totul escapat, apoi **îngroșat** și rânduri noi
@@ -552,9 +610,14 @@
     if (started) return;
     started = true;
     document.body.classList.add("chatting");
+    input.placeholder = "Scrieți un mesaj…";
+    window.scrollTo(0, 0);
   }
 
   document.getElementById("hero-bot").appendChild(makeBot("live"));
+  // Când se deschide tastatura pe telefon, rămânem la ultimul mesaj
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", () => started && scrollDown());
+  input.addEventListener("focus", () => started && setTimeout(scrollDown, 300));
   // Calculatorul (din site.js) poate porni conversația cu un mesaj gata scris
   window.ReturTaxChat = {
     start(text) {
@@ -572,7 +635,10 @@
     expecting = saved.expecting || null;
     Object.assign(lead, saved.lead || {});
     restoring = false;
-    setChips(expecting === "vrea_apel" ? ["Da, să mă sune", "Mai am o întrebare"]
+    // După refacere, sărim direct la ultimul mesaj
+    setTimeout(() => { log.scrollTop = log.scrollHeight; }, 60);
+    if (saved.yesno) showYesNo();
+    else setChips(expecting === "vrea_apel" ? ["Da, să mă sune", "Mai am o întrebare"]
       : expecting === null ? ["Vreau să mă sune cineva", "Cât costă?"] : []);
   } else {
     setChips(CHIPS_MAIN);

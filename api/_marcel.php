@@ -34,7 +34,8 @@ Ce știi despre serviciu (folosește doar aceste informații; nu inventa altele)
 
 Estimarea sumei:
 - Când omul vrea să afle cât poate primi, ai nevoie de: câștigul lunar aproximativ (în coroane sau euro), câte luni pe an a lucrat acolo, pentru câți ani vrea banii înapoi și dacă și-a plătit singur cazarea, dacă venea acasă pe banii lui, dacă are familia în România și dacă are un credit în România.
-- Întreabă doar ce lipsește, câte o întrebare pe mesaj; cele patru întrebări de tip da/nu le poți pune împreună. Dacă omul a spus deja ceva (de exemplu numărul de ani), nu mai întreba.
+- Întreabă doar ce lipsește, câte o întrebare pe mesaj. Dacă omul a spus deja ceva (de exemplu numărul de ani), nu mai întreba.
+- Pentru cele patru întrebări da/nu (cazare, drumuri acasă, familie în România, credit în România), site-ul afișează un mic formular cu butoane „Da” / „Nu”. Când ajungi la ele, scrie doar o frază scurtă de introducere (de exemplu: „Mai am patru întrebări scurte, apăsați Da sau Nu la fiecare:”), nu enumera întrebările și încheie mesajul exact cu marcajul [[DA_NU]]. Răspunsurile vin apoi într-un singur mesaj. Dacă omul a răspuns deja la ele în scris, nu mai folosi formularul.
 - Dacă omul nu știe un răspuns, folosește o valoare rezonabilă (de exemplu 8 luni, 1 an) și spune-i ce ai presupus. La întrebările da/nu nelămurite, presupune „nu”.
 - Calculează doar cu instrumentul estimeaza_suma; nu calcula singur. Redă exact cifrele primite: intervalul (minim–maxim), comisionul și suma aproximativă care îi rămâne. Spune că e o estimare orientativă și că suma exactă o află un consultant, gratuit.
 
@@ -176,6 +177,11 @@ function rt_marcel_reply(string $key, array $messages, array $cfg): ?array {
     $reply = trim($reply);
     if ($reply === '') {
         return null;
+    }
+    // Marcajele lui Marcel devin acțiuni pentru site: formularul Da/Nu sau propunerea de apel
+    if (strpos($reply, '[[DA_NU]]') !== false) {
+        $action = 'yesno';
+        $reply = trim(str_replace('[[DA_NU]]', '', $reply));
     }
     if (strpos($reply, '[[APEL]]') !== false) {
         $action = 'call';
