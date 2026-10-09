@@ -4,6 +4,23 @@
 (function () {
   "use strict";
 
+  /* ---------- Id-ul vizitei (leagă chat-ul, formularele și WhatsApp în panoul de admin) ---------- */
+  function conversationId() {
+    let id = "";
+    try { id = sessionStorage.getItem("rt_conv") || ""; } catch (e) {}
+    if (!id) {
+      id = window.crypto && crypto.randomUUID
+        ? crypto.randomUUID()
+        : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+          });
+      try { sessionStorage.setItem("rt_conv", id); } catch (e) {}
+    }
+    return id;
+  }
+  window.rtConversationId = conversationId;
+
   /* ---------- Meniu (telefon) ---------- */
   const menuBtn = document.querySelector(".menu-btn");
   const menu = document.getElementById("mobile-menu");
@@ -134,7 +151,9 @@
       const btn = form.querySelector("button[type=submit]");
       btn.disabled = true;
       try {
-        const res = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } });
+        const data = new FormData(form);
+        data.append("conversation_id", conversationId());
+        const res = await fetch(form.action, { method: "POST", body: data, headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(res.status);
         const keep = form.querySelector("[name=message][type=hidden]");
         const kept = keep && keep.value;
@@ -316,6 +335,14 @@
       '<div class="wa-found"><span class="wa-avatar" aria-hidden="true"><img src="/assets/echipa-2.webp" alt="" width="26" height="26"><span class="wa-check">✓</span></span>' +
       "<div><strong>Am găsit un consultant disponibil.</strong>" +
       "<p>Vă răspunde pe WhatsApp, de obicei în câteva minute.</p></div></div>";
+
+    // Salvăm în panoul de admin cine a ajuns la WhatsApp
+    fetch("/api/log.php", {
+      method: "POST",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "whatsapp", conversation_id: conversationId(), name: answers.name, years: answers.years, docs: answers.docs }),
+    }).catch(() => {});
 
     const lines = [
       "Bună ziua!" + (answers.name ? " Mă numesc " + answers.name + "." : ""),

@@ -8,6 +8,10 @@ RedirectMatch 404 ^/(content|tools|\.git)(/|$)
 <FilesMatch "^(README\.md|\.gitignore|\.dev\.vars)$">
   Require all denied
 </FilesMatch>
+# Fișierele interne din api/ (ex. _lib.php) nu se deschid din browser
+<FilesMatch "^_">
+  Require all denied
+</FilesMatch>
 
 # https și fără www
 RewriteEngine On

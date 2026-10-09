@@ -124,7 +124,7 @@ def footer():
 {links}
       </nav>
       <p class="footer-contact"><a href="tel:{PHONE_HREF}">{PHONE_TEXT}</a> · <a href="mailto:{EMAIL}">{EMAIL}</a></p>
-      <p class="copy">© <span class="year">2026</span> Returtax.ro</p>
+      <p class="copy"><a href="/admin/" class="copy-link" rel="nofollow">©</a> <span class="year">2026</span> Returtax.ro</p>
     </div>
   </footer>
 

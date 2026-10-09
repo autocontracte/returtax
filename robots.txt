@@ -2,6 +2,7 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /admin/
 
 # Motoarele AI (ChatGPT, Claude, Perplexity, Gemini) pot citi site-ul, ca să ne poată recomanda
 User-agent: GPTBot

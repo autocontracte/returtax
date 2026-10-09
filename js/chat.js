@@ -23,6 +23,17 @@
   let expecting = null;
   // Conversația, ca text simplu, pentru AI
   const history = [];
+  const conversationId = () => (window.rtConversationId ? window.rtConversationId() : "");
+
+  // Mesajele care nu trec prin AI se salvează separat, pentru panoul de admin
+  function logMessage(role, content, source) {
+    fetch("/api/log.php", {
+      method: "POST",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "message", conversation_id: conversationId(), role, content, source }),
+    }).catch(() => {});
+  }
   function remember(role, text) {
     const last = history[history.length - 1];
     if (last && last.role === role) last.content += "\n" + text;
@@ -32,7 +43,8 @@
   /* ---------- Afișarea mesajelor ---------- */
   function scrollDown() { log.scrollTop = log.scrollHeight; }
 
-  function addUser(text) {
+  // logSource: „buton” / „script” = salvăm aici; null = mesajul merge la AI și îl salvează serverul
+  function addUser(text, logSource) {
     const li = document.createElement("li");
     li.className = "msg msg-user";
     const b = document.createElement("div");
@@ -41,6 +53,7 @@
     li.appendChild(b);
     log.appendChild(li);
     remember("user", text);
+    if (logSource) logMessage("user", text, logSource);
     scrollDown();
   }
 
@@ -57,14 +70,16 @@
     bot.classList.add("live");
   }
 
-  function addBot(html) {
+  function addBot(html, fromAI) {
     const li = document.createElement("li");
     li.className = "msg msg-bot";
     const bot = makeBot("avatar");
     li.appendChild(bot);
     li.insertAdjacentHTML("beforeend", '<div class="bubble">' + html + "</div>");
     log.appendChild(li);
-    remember("assistant", li.querySelector(".bubble").textContent);
+    const text = li.querySelector(".bubble").textContent;
+    remember("assistant", text);
+    if (!fromAI) logMessage("assistant", text, "script");
     setLive(bot);
     scrollDown();
   }
@@ -147,9 +162,10 @@
     const text = raw.trim();
     if (!text) return;
     startChat();
-    addUser(text);
+    const viaAI = !fromChip && expecting === null;
+    addUser(text, viaAI ? null : fromChip ? "buton" : "script");
     setChips([]);
-    if (!fromChip && expecting === null) return askAI(text);
+    if (viaAI) return askAI(text);
     replyTo(text);
   }
 
@@ -157,7 +173,7 @@
   let aiBusy = false;
 
   async function askAI(text) {
-    if (aiBusy) return replyTo(text);
+    if (aiBusy) { logMessage("user", text, "script"); return replyTo(text); }
     aiBusy = true;
     lead.note.push(text);
     const typing = showTyping();
@@ -167,13 +183,13 @@
       const res = await fetch("/api/chat.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history.slice(-10) }),
+        body: JSON.stringify({ conversation_id: conversationId(), messages: history.slice(-14) }),
         signal: ctrl.signal,
       });
       const data = await res.json();
       if (!res.ok || !data.ok || !data.reply) throw new Error(data.error || res.status);
       typing.remove();
-      addBot(formatReply(data.reply));
+      addBot(formatReply(data.reply), true);
       if (data.action === "call") {
         expecting = "vrea_apel";
         setChips(["Da, să mă sune", "Mai am o întrebare"]);
@@ -184,6 +200,7 @@
       // Fără AI (local, eroare sau limită atinsă): răspunsurile pe bază de cuvinte-cheie
       typing.remove();
       lead.note.pop();
+      logMessage("user", text, "script");
       replyTo(text);
     } finally {
       clearTimeout(timer);
@@ -390,6 +407,7 @@
       "Alte mesaje: " + (lead.note.join(" | ") || "-"),
     ].join(" / "));
     fd.append("consent", "chat");
+    fd.append("conversation_id", conversationId());
     fetch("/api/contact.php", { method: "POST", body: fd }).catch(() => {});
   }
 
