@@ -211,6 +211,7 @@
       if (!yes && t !== "mai am o intrebare") expecting = null;
     }
     const viaAI = expecting === null;
+    if (window.rtTrack) window.rtTrack("chat_mesaj", (fromChip ? "buton: " : "") + text.slice(0, 120));
     addUser(text, viaAI ? null : fromChip ? "buton" : "script");
     setChips([]);
     if (viaAI) return askAI(text, fromChip);
@@ -511,6 +512,7 @@
     fd.append("consent", "chat");
     fd.append("conversation_id", conversationId());
     fetch("/api/contact.php", { method: "POST", body: fd }).catch(() => {});
+    if (window.rtTrack) window.rtTrack("cerere", "din chat (cerere de apel)");
   }
 
   /* ---------- Formular ---------- */
@@ -629,10 +631,24 @@
     window.scrollTo(0, 0);
   }
 
+  // Pe telefon, înălțimea ecranului de start se fixează o dată (și la rotire), nu la fiecare deschidere a tastaturii
+  const screenEl = document.querySelector(".screen");
+  const hasKeyboard = !window.matchMedia("(hover: hover)").matches;
+  let screenW = 0;
+  function fixScreenHeight() {
+    if (hasKeyboard && window.innerWidth === screenW) return;
+    screenW = window.innerWidth;
+    const header = document.querySelector(".topbar");
+    screenEl.style.setProperty("--screen-h", window.innerHeight - (header ? header.offsetHeight : 0) + "px");
+  }
+  fixScreenHeight();
+  window.addEventListener("resize", fixScreenHeight);
+
   document.getElementById("hero-bot").appendChild(makeBot("live"));
   // Când se deschide tastatura pe telefon, rămânem la ultimul mesaj
   if (window.visualViewport) window.visualViewport.addEventListener("resize", () => started && scrollDown());
   input.addEventListener("focus", () => started && setTimeout(scrollDown, 300));
+  input.addEventListener("focus", () => { if (window.rtTrack) window.rtTrack("chat_focus"); }, { once: true });
   // Calculatorul (din site.js) poate porni conversația cu un mesaj gata scris
   window.ReturTaxChat = {
     start(text) {

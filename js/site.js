@@ -1,6 +1,6 @@
 /* Returtax — comportament comun pentru toate paginile:
  * meniul de pe telefon, antetul, anul din subsol, calculatorul, formularele de contact,
- * pop-up-ul „Sunați-ne” (pe calculator) și butonul de WhatsApp. */
+ * pop-up-ul „Sunați-ne” (pe calculator), butonul de WhatsApp și ce fac vizitatorii (pentru panoul de admin). */
 (function () {
   "use strict";
 
@@ -20,6 +20,176 @@
     return id;
   }
   window.rtConversationId = conversationId;
+
+  /* ---------- Meta Pixel (reclame pe Facebook și Instagram), doar cu acordul vizitatorului ----------
+   * Stă oprit cât timp META_PIXEL_ID e gol. După ce treceți aici ID-ul din Meta Business, apare bannerul
+   * de acord, iar pixelul se încarcă numai după „Accept”. Alegerea se poate schimba din subsol („Cookie-uri”). */
+  const META_PIXEL_ID = "";
+  const PIXEL_EVENTS = {
+    cerere: ["track", "Lead"], telefon: ["track", "Contact"], whatsapp: ["track", "Contact"],
+    calculator_cta: ["trackCustom", "Calculator"],
+  };
+  function cookieChoice() {
+    try { return localStorage.getItem("rt_cookies") || ""; } catch (e) { return ""; }
+  }
+  function loadPixel() {
+    if (window.fbq) return;
+    const fbq = (window.fbq = function () { fbq.callMethod ? fbq.callMethod.apply(fbq, arguments) : fbq.queue.push(arguments); });
+    window._fbq = fbq;
+    fbq.push = fbq; fbq.loaded = true; fbq.version = "2.0"; fbq.queue = [];
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://connect.facebook.net/en_US/fbevents.js";
+    document.head.appendChild(script);
+    fbq("init", META_PIXEL_ID);
+    fbq("track", "PageView");
+  }
+  function pixel(type) {
+    if (window.fbq && PIXEL_EVENTS[type]) window.fbq(PIXEL_EVENTS[type][0], PIXEL_EVENTS[type][1]);
+  }
+  function askCookies() {
+    if (document.querySelector(".cookie-bar")) return;
+    const bar = document.createElement("div");
+    bar.className = "cookie-bar";
+    bar.setAttribute("role", "dialog");
+    bar.setAttribute("aria-label", "Cookie-uri");
+    bar.innerHTML =
+      "<p>Folosim cookie-uri de la Meta (Facebook) ca să măsurăm cât de bine merg reclamele noastre. " +
+      'Site-ul funcționează la fel și fără ele. <a href="/confidentialitate/">Detalii</a></p>' +
+      '<div class="cookie-actions"><button type="button" class="btn btn-outline" data-choice="nu">Refuz</button>' +
+      '<button type="button" class="btn btn-dark" data-choice="da">Accept</button></div>';
+    bar.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-choice]");
+      if (!btn) return;
+      try { localStorage.setItem("rt_cookies", btn.dataset.choice); } catch (err) {}
+      bar.remove();
+      if (btn.dataset.choice === "da") loadPixel();
+      else if (window.fbq) location.reload(); // acord retras: pagina se reîncarcă fără pixel
+    });
+    document.body.appendChild(bar);
+  }
+  if (META_PIXEL_ID) {
+    if (cookieChoice() === "da") loadPixel();
+    else if (!cookieChoice()) askCookies();
+    const legal = document.querySelector(".footer-legal");
+    if (legal) {
+      const link = document.createElement("a");
+      link.href = "#";
+      link.textContent = "Cookie-uri";
+      link.addEventListener("click", (e) => { e.preventDefault(); askCookies(); });
+      legal.append(" · ", link);
+    }
+  }
+
+  /* ---------- Ce fac vizitatorii (panoul de admin → Vizitatori) ----------
+   * Fără cookie-uri: evenimentele se leagă de id-ul vizitei de mai sus, care dispare la închiderea filei.
+   * Pleacă în loturi mici către /api/track.php; un lot gol doar spune „vizitatorul e încă aici”. */
+  const trackQueue = [];
+  let trackTimer = 0;
+  let lastActivity = Date.now();
+
+  // De unde a venit vizitatorul; se stabilește la prima pagină și rămâne pentru toată vizita
+  function visitContext() {
+    let ctx = null;
+    try { ctx = JSON.parse(sessionStorage.getItem("rt_src") || "null"); } catch (e) {}
+    if (!ctx) {
+      const q = new URLSearchParams(location.search);
+      let ref = "";
+      try { ref = document.referrer ? new URL(document.referrer).host : ""; } catch (e) {}
+      ctx = {
+        ref: ref === location.host ? "" : ref,
+        src: q.get("utm_source") || (q.get("fbclid") ? "facebook" : q.get("gclid") ? "google" : ""),
+        med: q.get("utm_medium") || "",
+        camp: q.get("utm_campaign") || "",
+        land: location.pathname,
+        w: window.innerWidth,
+      };
+      try { sessionStorage.setItem("rt_src", JSON.stringify(ctx)); } catch (e) {}
+    }
+    return ctx;
+  }
+
+  function flushTrack() {
+    clearTimeout(trackTimer);
+    trackTimer = 0;
+    const now = Date.now();
+    const body = JSON.stringify({
+      visit: conversationId(),
+      ctx: visitContext(),
+      events: trackQueue.splice(0, 40).map((e) => ({ t: e.t, d: e.d, p: e.p, ago: Math.round((now - e.at) / 1000) })),
+    });
+    if (!(navigator.sendBeacon && navigator.sendBeacon("/api/track.php", body))) {
+      fetch("/api/track.php", { method: "POST", body, keepalive: true }).catch(() => {});
+    }
+  }
+
+  function track(type, detail) {
+    const text = detail == null ? "" : String(detail).replace(/\s+/g, " ").trim().slice(0, 300);
+    trackQueue.push({ t: type, d: text, p: location.pathname, at: Date.now() });
+    lastActivity = Date.now();
+    if (!trackTimer) trackTimer = setTimeout(flushTrack, 2000);
+    pixel(type);
+  }
+  window.rtTrack = track;
+
+  track("vizita", document.title);
+
+  // Cât timp omul e activ pe pagină, vizita rămâne „în direct” în admin
+  ["scroll", "pointerdown", "keydown"].forEach((name) =>
+    window.addEventListener(name, () => { lastActivity = Date.now(); }, { passive: true }));
+  setInterval(() => {
+    if (document.visibilityState === "visible" && Date.now() - lastActivity < 25000 && !trackTimer) flushTrack();
+  }, 20000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && trackQueue.length) flushTrack();
+  });
+  window.addEventListener("pagehide", () => { if (trackQueue.length) flushTrack(); });
+
+  // Secțiunile la care a ajuns (o singură dată fiecare): arată cât de jos a citit
+  let unseen = Array.from(document.querySelectorAll(".info > section[id]"));
+  let sectionTimer = 0;
+  function checkSections() {
+    sectionTimer = 0;
+    const middle = window.innerHeight / 2;
+    unseen = unseen.filter((el) => {
+      const box = el.getBoundingClientRect();
+      if (box.top > middle || box.bottom < middle) return true; // nu e (încă) în mijlocul ecranului
+      track("sectiune", el.id);
+      return false;
+    });
+  }
+  window.addEventListener("scroll", () => {
+    if (unseen.length && !sectionTimer) sectionTimer = setTimeout(checkSections, 400);
+  }, { passive: true });
+
+  // Orice link sau buton apăsat, cu locul din pagină
+  function zoneOf(el) {
+    if (el.closest(".wa-panel, .wa-fab")) return "whatsapp";
+    if (el.closest("dialog")) return "pop-up";
+    if (el.closest(".mobile-menu")) return "meniu";
+    if (el.closest(".topbar")) return "antet";
+    if (el.closest("footer")) return "subsol";
+    if (el.closest("#chat")) return "chat";
+    const section = el.closest("section[id]");
+    return section ? section.id : "";
+  }
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("a, button, summary");
+    // Chat-ul și calculatorul au evenimentele lor, mai jos și în chat.js
+    if (!el || el.closest("#chat-form, #quick-replies, .yesno") || el.id === "calc-cta") return;
+    const href = el.getAttribute("href") || "";
+    const label = (el.textContent.trim() || el.getAttribute("aria-label") || "").replace(/\s+/g, " ").slice(0, 70);
+    let type = "clic";
+    if (href.startsWith("tel:")) type = "telefon";
+    else if (href.includes("wa.me")) type = "whatsapp";
+    else if (href.startsWith("mailto:")) type = "email";
+    else if (el.matches(".wa-fab")) type = "whatsapp_buton";
+    else if (el.matches("summary")) {
+      if (el.parentElement.open) return; // se închide, nu se deschide
+      type = "intrebare";
+    }
+    track(type, [zoneOf(el), label].filter(Boolean).join(" · "));
+  }, true);
 
   /* ---------- Meniu (telefon) ---------- */
   const menuBtn = document.querySelector(".menu-btn");
@@ -131,8 +301,26 @@
       $("calc-net").textContent = eur(low - feeLow) + " – " + eur(high - feeHigh);
     }
 
-    calc.addEventListener("input", compute);
-    calc.addEventListener("change", compute);
+    const CHECK_NAMES = { housing: "cazare", travel: "drumuri", family: "familie în RO", loan: "credit" };
+    let calcTimer = 0;
+    let calcSent = "";
+    function calcSummary() {
+      const checks = Object.keys(CHECK_NAMES).filter((n) => calc[n].checked).map((n) => CHECK_NAMES[n]);
+      return $("calc-salary").value + " " + $("calc-currency").value + "/lună · " + months.value + " luni/an · " +
+        lastYears + (lastYears === 1 ? " an" : " ani") + " · " + (checks.join(", ") || "nimic bifat") +
+        " → " + $("calc-low").textContent + " – " + $("calc-high").textContent;
+    }
+    // Trimitem către admin ce a introdus omul, după ce se oprește din modificat
+    function onCalcChange() {
+      compute();
+      clearTimeout(calcTimer);
+      calcTimer = setTimeout(() => {
+        const summary = calcSummary();
+        if (summary !== calcSent) track("calculator", (calcSent = summary));
+      }, 1500);
+    }
+    calc.addEventListener("input", onCalcChange);
+    calc.addEventListener("change", onCalcChange);
     compute();
 
     // „Vreau verificarea exactă”: deschidem pop-up-ul cu formular, cu datele din calculator deja trecute
@@ -150,6 +338,7 @@
         checks.join("; ") || "fără situații bifate",
         "estimare " + estimate,
       ].join(" · ");
+      track("calculator_cta", calcSummary());
       if (dialog && dialog.showModal) dialog.showModal();
       else location.href = "/#contact";
     });
@@ -186,10 +375,12 @@
         form.reset();
         if (keep) keep.value = kept;
         show("Mulțumim! Vă sunăm în cel mai scurt timp.", true);
+        track("cerere", form.closest("dialog") ? "din calculator" : "formularul de contact");
         const dialog = form.closest("dialog");
         if (dialog) setTimeout(() => dialog.close(), 2500);
       } catch (err) {
         show("Nu am putut trimite mesajul. Vă rugăm sunați-ne la 0752 176 807.", false);
+        track("cerere_eroare", String(err.message || err));
       } finally {
         btn.disabled = false;
       }

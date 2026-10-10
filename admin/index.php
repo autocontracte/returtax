@@ -3,7 +3,7 @@
  * Returtax — panoul de admin.
  *
  * Conversațiile cu Marcel (mesaj cu mesaj, cu costul AI), cererile din formulare,
- * calculator, chat și WhatsApp, plus costurile AI pe zile.
+ * calculator, chat și WhatsApp, ce fac vizitatorii pe site (pas cu pas), plus costurile AI pe zile.
  *
  * Contul de admin se creează pe server, cu:
  *   php /home/returtax/bin/creeaza-admin.php
@@ -20,6 +20,20 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-in
 const SESSION_HOURS = 8;
 const STATUSES = ['nou' => 'Nou', 'contactat' => 'Contactat', 'client' => 'Client', 'inchis' => 'Închis'];
 const SOURCES = ['formular' => 'Formular', 'calculator' => 'Calculator', 'chat' => 'Chat', 'whatsapp' => 'WhatsApp'];
+// Evenimentele trimise de js/site.js și js/chat.js, pe înțelesul tuturor
+const EVENTS = [
+    'vizita' => 'A deschis pagina', 'sectiune' => 'A ajuns la secțiunea', 'calculator' => 'A folosit calculatorul',
+    'calculator_cta' => 'A cerut verificarea exactă din calculator', 'cerere' => 'A trimis o cerere', 'cerere_eroare' => 'Cererea nu s-a trimis',
+    'chat_focus' => 'A dat clic în căsuța lui Marcel', 'chat_mesaj' => 'I-a scris lui Marcel', 'telefon' => 'A apăsat pe telefon',
+    'whatsapp' => 'A apăsat pe WhatsApp', 'whatsapp_buton' => 'A deschis fereastra de WhatsApp', 'email' => 'A apăsat pe e-mail',
+    'intrebare' => 'A deschis întrebarea', 'clic' => 'A apăsat',
+];
+const SECTIONS = ['calculator' => 'Calculator', 'de-ce' => 'De ce primiți bani înapoi', 'cum-functioneaza' => 'Cum funcționează',
+    'despre' => 'Despre noi', 'pret' => 'Preț', 'de-ce-noi' => 'De ce noi', 'recenzii' => 'Recenzii', 'intrebari' => 'Întrebări frecvente',
+    'blog' => 'Blog', 'contact' => 'Contact'];
+// Pașii importanți, arătați ca etichete în lista de vizite
+const STEPS = ['calculator' => 'calculator', 'chat_mesaj' => 'Marcel', 'telefon' => 'telefon', 'whatsapp' => 'WhatsApp', 'cerere' => 'cerere'];
+const LIVE_SECONDS = 60;
 
 session_name('RTADMIN');
 session_set_cookie_params(['lifetime' => 0, 'path' => '/admin/', 'secure' => true, 'httponly' => true, 'samesite' => 'Strict']);
@@ -45,6 +59,13 @@ function check_csrf(): void {
         http_response_code(400);
         exit('Sesiune expirată. Reîncărcați pagina.');
     }
+}
+function duration(string $from, string $to): string {
+    $s = max(0, strtotime($to) - strtotime($from));
+    return $s < 60 ? $s . ' s' : ($s < 3600 ? floor($s / 60) . ' min ' . ($s % 60) . ' s' : floor($s / 3600) . ' h ' . floor($s % 3600 / 60) . ' min');
+}
+function source_label(array $v): string {
+    return trim(($v['source'] ?: 'direct') . ($v['medium'] ? ' / ' . $v['medium'] : '') . ($v['campaign'] ? ' / ' . $v['campaign'] : ''));
 }
 function go(string $query = ''): void {
     header('Location: /admin/' . ($query ? '?' . $query : ''));
@@ -90,6 +111,10 @@ if (($_POST['action'] ?? '') === 'logout') {
     go();
 }
 $logged = !empty($_SESSION['admin']) && (time() - ($_SESSION['since'] ?? 0)) < SESSION_HOURS * 3600;
+// Vizitele făcute din browserul în care sunteți conectat nu se numără la „Vizitatori” (vezi api/track.php)
+if ($logged && empty($_COOKIE['rt_owner'])) {
+    setcookie('rt_owner', '1', ['expires' => time() + 365 * 86400, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
+}
 
 /* ---------- Acțiuni ---------- */
 if ($logged && ($_POST['action'] ?? '') === 'lead') {
@@ -110,6 +135,7 @@ $db = $logged ? rt_db() : null;
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<?php if ($view === 'vizitatori'): ?><meta http-equiv="refresh" content="30"><?php endif; ?>
 <title>Admin · Returtax</title>
 <link rel="icon" type="image/png" href="/assets/icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -163,6 +189,15 @@ $db = $logged ? rt_db() : null;
   .login button { width:100%; margin-top:18px; padding:12px; }
   .err { color:#b91c1c; font-weight:600; margin-top:10px; }
   .note { background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .steps { display:flex; gap:4px; flex-wrap:wrap; }
+  .timeline { list-style:none; margin:0; padding:0; max-width:760px; background:#fff; border:1px solid var(--line); border-radius:18px; }
+  .timeline li { display:grid; grid-template-columns:72px 1fr; gap:10px; padding:9px 14px; border-bottom:1px solid var(--line); }
+  .timeline li:last-child { border-bottom:0; }
+  .timeline time { color:var(--muted); font-size:.8rem; font-variant-numeric:tabular-nums; padding-top:2px; }
+  .timeline .key { font-weight:700; }
+  .timeline .d { color:var(--muted); font-size:.86rem; overflow-wrap:anywhere; }
+  .funnel td:last-child { width:45%; }
+  .bar-h { height:10px; border-radius:999px; background:var(--blue); min-width:2px; }
 </style>
 </head>
 <body>
@@ -183,8 +218,8 @@ $db = $logged ? rt_db() : null;
     <?php endif; ?>
   </div>
 <?php else:
-    $nav = ['acasa' => 'Acasă', 'conversatii' => 'Conversații', 'cereri' => 'Cereri', 'costuri' => 'Costuri AI'];
-    $active = $view === 'conversatie' ? 'conversatii' : $view;
+    $nav = ['acasa' => 'Acasă', 'vizitatori' => 'Vizitatori', 'conversatii' => 'Conversații', 'cereri' => 'Cereri', 'costuri' => 'Costuri AI'];
+    $active = $view === 'conversatie' ? 'conversatii' : ($view === 'vizita' ? 'vizitatori' : $view);
 ?>
   <header><div class="bar">
     <a href="/admin/"><img src="/assets/logo.png" alt="Returtax"></a>
@@ -213,9 +248,14 @@ if ($view === 'acasa'):
     $costMonth = $q("SELECT COALESCE(SUM(cost_usd),0) FROM messages WHERE created_at >= ?", [$month . '-01']);
     $costAll = $q("SELECT COALESCE(SUM(cost_usd),0) FROM messages");
     $aiAll = $q("SELECT COUNT(*) FROM messages WHERE role='assistant' AND source='ai'");
+    $onSite = $q("SELECT COUNT(*) FROM visits WHERE last_at >= ?", [date('Y-m-d H:i:s', time() - LIVE_SECONDS)]);
+    $visitsToday = $q("SELECT COUNT(*) FROM visits WHERE started_at >= ?", [$today]);
+    $visits7 = $q("SELECT COUNT(*) FROM visits WHERE started_at >= ?", [date('Y-m-d', strtotime('-6 days'))]);
 ?>
     <h1>Acasă</h1>
     <div class="cards">
+      <div class="card"><div class="k">Acum pe site</div><div class="v <?= $onSite ? 'live' : '' ?>"><?= (int)$onSite ?></div><div class="s"><a href="/admin/?v=vizitatori">vezi ce fac →</a></div></div>
+      <div class="card"><div class="k">Vizitatori azi</div><div class="v"><?= (int)$visitsToday ?></div><div class="s"><?= (int)$visits7 ?> în ultimele 7 zile</div></div>
       <div class="card"><div class="k">Acum pe chat</div><div class="v <?= $live ? 'live' : '' ?>"><?= (int)$live ?></div><div class="s">activi în ultimele 5 minute</div></div>
       <div class="card"><div class="k">Conversații azi</div><div class="v"><?= (int)$convToday ?></div><div class="s"><?= (int)$conv7 ?> în ultimele 7 zile</div></div>
       <div class="card"><div class="k">Cereri noi</div><div class="v"><?= (int)$leadsNew ?></div><div class="s"><?= (int)$leadsToday ?> primite azi</div></div>
@@ -250,6 +290,133 @@ if ($view === 'acasa'):
     <p><a href="/admin/?v=conversatii">Toate conversațiile →</a></p>
 
 <?php
+/* ---------- Vizitatori ---------- */
+elseif ($view === 'vizitatori'):
+    $days = in_array((int)($_GET['z'] ?? 1), [1, 7, 30], true) ? (int)($_GET['z'] ?? 1) : 1;
+    $since = date('Y-m-d', strtotime('-' . ($days - 1) . ' days'));
+    $q = function (string $sql, array $p = []) use ($db) {
+        $s = $db->prepare($sql);
+        $s->execute($p);
+        return $s->fetchColumn();
+    };
+    // Câți vizitatori au făcut măcar o dată un anumit lucru
+    $did = fn(string $types) => (int)$q("SELECT COUNT(DISTINCT e.visit_id) FROM events e JOIN visits v ON v.id = e.visit_id
+                                         WHERE v.started_at >= ? AND e.type IN ($types)", [$since]);
+    $total = (int)$q("SELECT COUNT(*) FROM visits WHERE started_at >= ?", [$since]);
+    $onSite = (int)$q("SELECT COUNT(*) FROM visits WHERE last_at >= ?", [date('Y-m-d H:i:s', time() - LIVE_SECONDS)]);
+    $funnel = [
+        'Au intrat pe site' => $total,
+        'Au ajuns la calculator' => (int)$q("SELECT COUNT(DISTINCT e.visit_id) FROM events e JOIN visits v ON v.id = e.visit_id
+                                             WHERE v.started_at >= ? AND e.type = 'sectiune' AND e.detail = 'calculator'", [$since]),
+        'Au folosit calculatorul' => $did("'calculator','calculator_cta'"),
+        'I-au scris lui Marcel' => $did("'chat_mesaj'"),
+        'Au apăsat pe telefon sau WhatsApp' => $did("'telefon','whatsapp'"),
+        'Au trimis o cerere' => (int)$q("SELECT COUNT(DISTINCT v.id) FROM visits v WHERE v.started_at >= ?
+                                         AND (EXISTS (SELECT 1 FROM leads l WHERE l.conversation_id = v.id)
+                                           OR EXISTS (SELECT 1 FROM events e WHERE e.visit_id = v.id AND e.type = 'cerere'))", [$since]),
+    ];
+    $sources = $db->prepare("SELECT COALESCE(NULLIF(v.source,''),'direct') AS source, v.medium, v.campaign, COUNT(*) AS n,
+            SUM(EXISTS (SELECT 1 FROM events e WHERE e.visit_id = v.id AND e.type IN ('calculator','calculator_cta'))) AS calc,
+            SUM(EXISTS (SELECT 1 FROM events e WHERE e.visit_id = v.id AND e.type = 'chat_mesaj')) AS chat,
+            SUM(EXISTS (SELECT 1 FROM leads l WHERE l.conversation_id = v.id)) AS leads
+        FROM visits v WHERE v.started_at >= ? GROUP BY 1, 2, 3 ORDER BY n DESC LIMIT 30");
+    $sources->execute([$since]);
+    $sources = $sources->fetchAll();
+    $visits = $db->prepare("SELECT v.*,
+            (SELECT GROUP_CONCAT(DISTINCT e.type) FROM events e WHERE e.visit_id = v.id AND e.type IN ('calculator','chat_mesaj','telefon','whatsapp','cerere')) AS steps,
+            (SELECT e.detail FROM events e WHERE e.visit_id = v.id AND e.type = 'sectiune' ORDER BY e.id DESC LIMIT 1) AS reached,
+            EXISTS (SELECT 1 FROM leads l WHERE l.conversation_id = v.id) AS has_lead
+        FROM visits v WHERE v.started_at >= ? ORDER BY v.last_at DESC LIMIT 200");
+    $visits->execute([$since]);
+    $visits = $visits->fetchAll();
+?>
+    <h1>Vizitatori</h1>
+    <div class="filters">
+      <?php foreach ([1 => 'Azi', 7 => 'Ultimele 7 zile', 30 => 'Ultimele 30 de zile'] as $k => $label): ?>
+        <a href="/admin/?v=vizitatori&z=<?= $k ?>" class="<?= $days === $k ? 'on' : '' ?>"><?= $label ?></a><?php endforeach; ?>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="k">Acum pe site</div><div class="v <?= $onSite ? 'live' : '' ?>"><?= $onSite ?></div><div class="s">activi în ultimul minut · pagina se reîncarcă singură</div></div>
+      <div class="card"><div class="k">Vizitatori</div><div class="v"><?= $total ?></div><div class="s"><?= $days === 1 ? 'azi' : 'în ultimele ' . $days . ' zile' ?></div></div>
+      <div class="card"><div class="k">Au folosit calculatorul</div><div class="v"><?= $funnel['Au folosit calculatorul'] ?></div><div class="s"><?= $total ? round($funnel['Au folosit calculatorul'] / $total * 100) : 0 ?>% din vizitatori</div></div>
+      <div class="card"><div class="k">Au trimis o cerere</div><div class="v"><?= $funnel['Au trimis o cerere'] ?></div><div class="s"><?= $total ? round($funnel['Au trimis o cerere'] / $total * 100, 1) : 0 ?>% din vizitatori</div></div>
+    </div>
+
+    <h2>Ce fac pe site</h2>
+    <div class="table"><table class="funnel">
+      <tr><th>Pas</th><th>Vizitatori</th><th>Din total</th><th></th></tr>
+      <?php foreach ($funnel as $label => $n): $pct = $total ? $n / $total * 100 : 0; ?>
+        <tr><td><?= e($label) ?></td><td><?= $n ?></td><td><?= round($pct) ?>%</td><td><div class="bar-h" style="width:<?= round($pct) ?>%"></div></td></tr>
+      <?php endforeach; ?>
+    </table></div>
+
+    <h2>De unde vin</h2>
+    <div class="table"><table>
+      <tr><th>Sursa</th><th>Vizitatori</th><th>Au folosit calculatorul</th><th>I-au scris lui Marcel</th><th>Cereri</th></tr>
+      <?php foreach ($sources as $r): ?>
+        <tr><td><?= e(source_label($r)) ?></td><td><?= (int)$r['n'] ?></td><td><?= (int)$r['calc'] ?></td><td><?= (int)$r['chat'] ?></td><td><?= (int)$r['leads'] ?></td></tr>
+      <?php endforeach; if (!$sources): ?><tr><td colspan="5" class="muted">Niciun vizitator în această perioadă.</td></tr><?php endif; ?>
+    </table></div>
+    <p class="muted">Ca să vedeți din ce grup sau reclamă vine fiecare om, puneți în postare linkul cu etichetă, de exemplu:
+      <code>https://returtax.ro/?utm_source=facebook&amp;utm_medium=grup&amp;utm_campaign=romani-in-norvegia</code></p>
+
+    <h2>Vizite</h2>
+    <div class="table"><table>
+      <tr><th>Ultima activitate</th><th>Sursa</th><th>Dispozitiv</th><th>A stat</th><th>A ajuns până la</th><th>Ce a făcut</th><th></th></tr>
+      <?php foreach ($visits as $r): $on = strtotime($r['last_at']) > time() - LIVE_SECONDS;
+            $steps = array_filter(explode(',', (string)$r['steps']));
+            if ($r['has_lead'] && !in_array('cerere', $steps, true)) { $steps[] = 'cerere'; } ?>
+        <tr><td class="nowrap"><?= e(substr($r['last_at'], 0, 16)) ?> <?= $on ? '<span class="tag on">acum</span>' : '' ?></td>
+            <td><?= e(source_label($r)) ?></td><td><?= e($r['device'] ?: '—') ?></td>
+            <td class="nowrap"><?= e(duration($r['started_at'], $r['last_at'])) ?></td>
+            <td><?= e(SECTIONS[$r['reached']] ?? ($r['reached'] ?: 'prima pagină')) ?></td>
+            <td><div class="steps"><?php foreach (STEPS as $type => $label): if (in_array($type, $steps, true)): ?>
+              <span class="tag <?= $type === 'cerere' ? 'client' : '' ?>"><?= e($label) ?></span><?php endif; endforeach; ?></div></td>
+            <td><a href="/admin/?v=vizita&id=<?= e($r['id']) ?>">pas cu pas</a></td></tr>
+      <?php endforeach; if (!$visits): ?><tr><td colspan="7" class="muted">Niciun vizitator în această perioadă.</td></tr><?php endif; ?>
+    </table></div>
+
+<?php
+/* ---------- O vizită, pas cu pas ---------- */
+elseif ($view === 'vizita'):
+    $id = rt_conversation_id($_GET['id'] ?? '');
+    $v = $db->prepare('SELECT * FROM visits WHERE id = ?');
+    $v->execute([$id]);
+    $v = $v->fetch();
+    if (!$v): ?><h1>Vizită negăsită</h1><?php else:
+    $ev = $db->prepare('SELECT * FROM events WHERE visit_id = ? ORDER BY id');
+    $ev->execute([$id]);
+    $leads = $db->prepare('SELECT * FROM leads WHERE conversation_id = ? ORDER BY id');
+    $leads->execute([$id]);
+    $hasChat = $db->prepare('SELECT messages FROM conversations WHERE id = ?');
+    $hasChat->execute([$id]);
+    $hasChat = (int)$hasChat->fetchColumn();
+    $important = ['calculator', 'calculator_cta', 'cerere', 'chat_mesaj', 'telefon', 'whatsapp'];
+?>
+    <p><a href="/admin/?v=vizitatori">← Vizitatori</a></p>
+    <h1>Vizită din <?= e(substr($v['started_at'], 0, 16)) ?></h1>
+    <p class="muted">Sursa: <strong><?= e(source_label($v)) ?></strong><?= $v['referrer'] ? ' (de pe ' . e($v['referrer']) . ')' : '' ?>
+       · <?= e($v['device'] ?: 'dispozitiv necunoscut') ?> · prima pagină <?= e($v['landing'] ?: '/') ?>
+       · a stat <?= e(duration($v['started_at'], $v['last_at'])) ?>
+       <?= strtotime($v['last_at']) > time() - LIVE_SECONDS ? '<span class="tag on">pe site acum</span>' : '' ?><br>
+       <span class="nowrap">Browser: <?= e(mb_strimwidth((string)$v['user_agent'], 0, 90, '…')) ?></span></p>
+    <?php if ($hasChat): ?><p><a href="/admin/?v=conversatie&id=<?= e($id) ?>">Vezi conversația cu Marcel (<?= $hasChat ?> mesaje) →</a></p><?php endif; ?>
+    <?php foreach ($leads->fetchAll() as $l): ?>
+      <div class="note" style="margin-bottom:14px">
+        <strong>Cerere:</strong> <?= e($l['name'] ?: '—') ?> · <?= $l['phone'] ? '<a href="tel:' . e($l['phone']) . '">' . e($l['phone']) . '</a>' : '—' ?>
+        · <span class="tag <?= e($l['status']) ?>"><?= e(STATUSES[$l['status']] ?? $l['status']) ?></span>
+      </div>
+    <?php endforeach; ?>
+    <ol class="timeline">
+      <?php $n = 0; foreach ($ev->fetchAll() as $row): $n++;
+            $detail = $row['type'] === 'sectiune' ? (SECTIONS[$row['detail']] ?? $row['detail']) : $row['detail']; ?>
+        <li><time><?= e(substr($row['created_at'], 11, 8)) ?></time>
+            <div><span class="<?= in_array($row['type'], $important, true) ? 'key' : '' ?>"><?= e(EVENTS[$row['type']] ?? $row['type']) ?></span>
+              <?php if ($detail !== ''): ?><div class="d"><?= e($detail) ?><?= $row['type'] === 'vizita' ? ' · ' . e($row['path']) : '' ?></div><?php endif; ?></div></li>
+      <?php endforeach; if (!$n): ?><li><time></time><div class="muted">Nicio acțiune înregistrată.</div></li><?php endif; ?>
+    </ol>
+<?php endif;
+
 /* ---------- Conversații ---------- */
 elseif ($view === 'conversatii'):
     $page = max(1, (int)($_GET['p'] ?? 1));
@@ -291,7 +458,7 @@ elseif ($view === 'conversatie'):
     $leads = $leads->fetchAll();
     $labels = ['ai' => 'AI', 'script' => 'automat', 'buton' => 'buton'];
 ?>
-    <p><a href="/admin/?v=conversatii">← Conversații</a></p>
+    <p><a href="/admin/?v=conversatii">← Conversații</a> · <a href="/admin/?v=vizita&id=<?= e($id) ?>">Ce a făcut pe site →</a></p>
     <h1>Conversație din <?= e(substr($c['started_at'], 0, 16)) ?></h1>
     <p class="muted"><?= (int)$c['messages'] ?> mesaje · cost AI <?= usd($c['cost_usd']) ?> (<?= ron($c['cost_usd']) ?>) · ultimul mesaj <?= e(substr($c['last_at'], 0, 16)) ?>
        <?= strtotime($c['last_at']) > time() - 300 ? '<span class="tag on">activ acum</span>' : '' ?><br>
@@ -327,7 +494,8 @@ elseif ($view === 'conversatie'):
 /* ---------- Cereri ---------- */
 elseif ($view === 'cereri'):
     $status = array_key_exists($_GET['status'] ?? '', STATUSES) ? $_GET['status'] : '';
-    $s = $db->prepare('SELECT * FROM leads' . ($status ? ' WHERE status = ?' : '') . ' ORDER BY id DESC LIMIT 300');
+    $s = $db->prepare('SELECT l.*, v.source AS v_source, v.medium AS v_medium, v.campaign AS v_campaign, v.id AS visit
+        FROM leads l LEFT JOIN visits v ON v.id = l.conversation_id' . ($status ? ' WHERE l.status = ?' : '') . ' ORDER BY l.id DESC LIMIT 300');
     $s->execute($status ? [$status] : []);
     $rows = $s->fetchAll();
 ?>
@@ -342,6 +510,8 @@ elseif ($view === 'cereri'):
         <tr>
           <td class="nowrap"><?= e(substr($r['created_at'], 0, 16)) ?></td>
           <td><span class="tag"><?= e(SOURCES[$r['source']] ?? $r['source']) ?></span>
+              <?php if ($r['visit']): ?><br><span class="muted">venit din: <?= e(source_label(['source' => $r['v_source'], 'medium' => $r['v_medium'], 'campaign' => $r['v_campaign']])) ?></span>
+                <br><a href="/admin/?v=vizita&id=<?= e($r['visit']) ?>" class="muted">vezi vizita</a><?php endif; ?>
               <?php if ($r['conversation_id']): ?><br><a href="/admin/?v=conversatie&id=<?= e($r['conversation_id']) ?>" class="muted">vezi chat</a><?php endif; ?></td>
           <td><strong><?= e($r['name'] ?: '—') ?></strong><br><?= $r['phone'] ? '<a href="tel:' . e($r['phone']) . '">' . e($r['phone']) . '</a>' : '<span class="muted">fără telefon</span>' ?>
               <?= $r['email'] ? '<br><a href="mailto:' . e($r['email']) . '">' . e($r['email']) . '</a>' : '' ?></td>

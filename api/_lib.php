@@ -4,9 +4,11 @@
  * Fișierele care încep cu „_” nu pot fi deschise din browser (vezi .htaccess).
  *
  * Datele stau în afara folderului public:
- *   /home/returtax/data/returtax.sqlite   conversații, mesaje, cereri
+ *   /home/returtax/data/returtax.sqlite   conversații, mesaje, cereri, vizite
  *   /home/returtax/secrets/                cheia API, contul de admin
  */
+
+date_default_timezone_set('Europe/Bucharest');     // orele din baza de date și din admin sunt ora României
 
 const RT_HOME = __DIR__ . '/../..';               // /home/returtax
 const RT_DATA = RT_HOME . '/data';
@@ -75,6 +77,32 @@ function rt_db(): PDO {
             ip_hash         TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at);
+        -- Vizitele pe site; id-ul e același cu al conversației (id-ul temporar din browser)
+        CREATE TABLE IF NOT EXISTS visits (
+            id          TEXT PRIMARY KEY,
+            started_at  TEXT NOT NULL,
+            last_at     TEXT NOT NULL,
+            ip_hash     TEXT,
+            user_agent  TEXT,
+            device      TEXT,                        -- telefon | tabletă | calculator
+            source      TEXT,                        -- facebook | google | direct | ...
+            medium      TEXT, campaign TEXT,
+            referrer    TEXT,                        -- doar domeniul de pe care a venit
+            landing     TEXT,                        -- prima pagină deschisă
+            events      INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_visits_started ON visits(started_at);
+        CREATE INDEX IF NOT EXISTS idx_visits_last ON visits(last_at);
+        CREATE TABLE IF NOT EXISTS events (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            visit_id    TEXT NOT NULL,
+            created_at  TEXT NOT NULL,
+            type        TEXT NOT NULL,               -- vizita | sectiune | calculator | chat_mesaj | telefon | ...
+            detail      TEXT,
+            path        TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_events_visit ON events(visit_id, id);
+        CREATE INDEX IF NOT EXISTS idx_events_type ON events(type, created_at);
     ");
     // Bazele create înainte de coloana „model”
     try {
